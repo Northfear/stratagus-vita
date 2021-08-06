@@ -8,7 +8,7 @@
  *
  * Copyright (c) 2004, 2005 darkbits                        Js_./
  * Per Larsson a.k.a finalman                          _RqZ{a<^_aa
- * Olof Naessén a.k.a jansem/yakslem                _asww7!uY`>  )\a//
+ * Olof Naessï¿½n a.k.a jansem/yakslem                _asww7!uY`>  )\a//
  *                                                 _Qhm`] _f "'c  1!5m
  * Visit: http://guichan.darkbits.org             )Qk<P ` _: :+' .'  "{[
  *                                               .)j(] .d_/ '-(  P .   S
@@ -133,6 +133,33 @@ namespace gcn
           case SDL_TEXTINPUT:
               {
                   char* text = event.text.text;
+#ifdef VITA
+                    // clear text field first in the most stupid way possible
+                    for (int32_t i = 0; i < 32; ++i) {
+                        SDL_Keysym keysym;
+                        SDL_zero(keysym);
+                        keyInput.setType(KeyInput::PRESS);
+                        keysym.sym = SDLK_BACKSPACE;
+                        keyInput.setKey(convertKeyCharacter(keysym));
+                        mKeyInputQueue.push(keyInput);
+                        keysym.sym = SDLK_DELETE;
+                        keyInput.setKey(convertKeyCharacter(keysym));
+                        mKeyInputQueue.push(keyInput);
+                    }
+
+                    uint8_t pos = 0;
+                    while (text[pos] != '\0' && pos < 32)
+                    {
+                        if ((uint8_t)text[pos] >= 32 || (uint8_t)text[pos] < 128) {
+                            mLastKey = text[pos];
+                            mIsRepeating = true;
+                            keyInput.setKey(mLastKey);
+                            keyInput.setType(KeyInput::PRESS);
+                            mKeyInputQueue.push(keyInput);
+                        }
+                        ++pos;
+                    }
+#else
                   if ((uint8_t)text[0] >= 32 || (uint8_t)text[0] < 128) {
                       mLastKey = text[0];
                       mIsRepeating = true;
@@ -140,6 +167,7 @@ namespace gcn
                       keyInput.setType(KeyInput::PRESS);
                       mKeyInputQueue.push(keyInput);
                   }
+#endif
               }
               break;
 

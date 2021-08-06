@@ -8,7 +8,7 @@
  *
  * Copyright (c) 2004, 2005 darkbits                        Js_./
  * Per Larsson a.k.a finalman                          _RqZ{a<^_aa
- * Olof Naessén a.k.a jansem/yakslem                _asww7!uY`>  )\a//
+ * Olof Naessï¿½n a.k.a jansem/yakslem                _asww7!uY`>  )\a//
  *                                                 _Qhm`] _f "'c  1!5m
  * Visit: http://guichan.darkbits.org             )Qk<P ` _: :+' .'  "{[
  *                                               .)j(] .d_/ '-(  P .   S
@@ -61,6 +61,10 @@
 #include "guichan/widgets/textfield.h"
 #include "guichan/exception.h"
 #include "util.h"
+
+#ifdef VITA
+#include "video.h"
+#endif
 
 namespace gcn
 {
@@ -456,4 +460,18 @@ namespace gcn
     {
         fixScroll();
     }
+
+#ifdef VITA
+    void TextField::gotFocus()
+    {
+        Widget::gotFocus();
+        Video.SetTextInput(true);
+    }
+
+    void TextField::lostFocus()
+    {
+        Widget::lostFocus();
+        Video.SetTextInput(false);
+    }
+#endif
 }

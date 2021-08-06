@@ -231,6 +231,69 @@ extern void beos_init(int argc, char **argv);
 #include "SetupConsole_win32.h"
 #endif
 
+#ifdef VITA
+#include <psp2/kernel/processmgr.h>
+#include <psp2/kernel/clib.h>
+#include <psp2/apputil.h>
+#include <psp2/power.h>
+#include "fios.h"
+
+int sceLibcHeapSize = 2 * 1024 * 1024;
+int _newlib_heap_size_user = 335 * 1024 * 1024;
+
+
+void *memcpy(void *destination, const void *source, size_t n)
+{
+	return sceClibMemcpy(destination, source, n);
+}
+
+void *memset(void *destination, int c, size_t n)
+{
+	return sceClibMemset(destination, c, n);
+}
+
+void *memmove(void *destination, const void *source, size_t n)
+{
+	return sceClibMemmove(destination, source, n);
+}
+
+int memcmp(const void *arr1, const void *arr2, size_t n)
+{
+	return sceClibMemcmp(arr1, arr2, n);
+}
+
+long int sysconf(int name)
+{
+	switch (name)
+		{
+		case _SC_NPROCESSORS_ONLN:
+			return 3;
+		}
+	return -1;
+}
+
+void VitaSetGamePath()
+{
+	SceAppUtilInitParam appUtilParam;
+	SceAppUtilBootParam appUtilBootParam;
+	memset(&appUtilParam, 0, sizeof(SceAppUtilInitParam));
+	memset(&appUtilBootParam, 0, sizeof(SceAppUtilBootParam));
+	sceAppUtilInit(&appUtilParam, &appUtilBootParam);
+	SceAppUtilAppEventParam eventParam;
+	memset(&eventParam, 0, sizeof(SceAppUtilAppEventParam));
+	sceAppUtilReceiveAppEvent(&eventParam);
+	StratagusLibPath = "ux0:data/Wargus";
+
+	if (eventParam.type == 0x05) {
+		char appUtilLiveParam[2048];
+		sceAppUtilAppEventParseLiveArea(&eventParam, appUtilLiveParam);
+		if (strcmp("WC1", appUtilLiveParam) == 0) {
+			StratagusLibPath = "ux0:data/War1gus";
+		}
+	}
+}
+#endif
+
 /*----------------------------------------------------------------------------
 --  Variables
 ----------------------------------------------------------------------------*/
@@ -411,7 +474,12 @@ void Exit(int err)
 	DeInitImageLoaders();
 
 	fprintf(stdout, "%s", _("Thanks for playing Stratagus.\n"));
+#ifdef VITA
+	fios_terminate();
+	sceKernelExitProcess(0);
+#else
 	exit(err);
+#endif
 }
 
 /**
@@ -426,6 +494,13 @@ void ExitFatal(int err)
 	throw stacktrace::stack_runtime_error((const char*)err);
 #else
 	print_backtrace();
+#endif
+
+#ifdef VITA
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+							"Error during initialization.",
+							"Wargus requires original game data. Make sure that data is properly installed. Check detailed instructions on the GitHub page of the port:\nhttps://github.com/Northfear/stratagus-vita",
+							NULL);
 #endif
 	exit(err);
 }
@@ -677,7 +752,14 @@ int stratagusMain(int argc, char **argv)
 	SetupConsole();
 #endif
 	//  Setup some defaults.
-#ifndef MAC_BUNDLE
+#ifdef VITA
+	scePowerSetArmClockFrequency(444);
+	scePowerSetBusClockFrequency(222);
+	scePowerSetGpuClockFrequency(222);
+	scePowerSetGpuXbarClockFrequency(166);
+	VitaSetGamePath();
+	fios_init(StratagusLibPath.c_str());
+#elif !defined(MAC_BUNDLE)
 	StratagusLibPath = ".";
 #else
 	freopen("/tmp/stdout.txt", "w", stdout);

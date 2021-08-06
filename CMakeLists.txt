@@ -137,6 +137,11 @@ set(beos_SRCS
 )
 source_group(beos FILES ${beos_SRCS})
 
+set(vita_SRCS
+	src/vita/fios.c
+)
+source_group(vita FILES ${vita_SRCS})
+
 set(editor_SRCS
 	src/editor/editloop.cpp
 	src/editor/editor.cpp
@@ -643,6 +648,10 @@ endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 
+if(VITA)
+	set (LUA_INCLUDE_DIR ${VITASDK}/arm-vita-eabi/include/lua)
+endif()
+
 find_package(Lua51 REQUIRED)
 find_package(PNG REQUIRED)
 find_package(SDL2 REQUIRED)
@@ -1032,6 +1041,20 @@ message("==================================")
 
 # Compile Stratagus
 
+if(VITA)
+    add_definitions(-DVITA)
+	add_definitions(-DOPENMP_ENABLED)
+	include_directories(src/vita)
+	set(stratagus_SRCS ${stratagus_SRCS} ${vita_SRCS})
+	set(VITA_FLAGS "-Ofast -mcpu=cortex-a9 -mfpu=neon -fgraphite-identity -floop-nest-optimize -fno-lto -fopenmp")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VITA_FLAGS}")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VITA_FLAGS}")
+	set(VITA_LIBS "-lSDL2 -pthread -fopenmp -ljpeg -lpng -lwebp -lz -lvorbisfile -lvorbis -logg -lmikmod -lScePower_stub -lSceAudio_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub \
+	-lSceDisplay_stub -lSceGxm_stub -lSceCommonDialog_stub -lFLAC -lmpg123 -lSceMotion_stub -lSceAppUtil_stub -lSceFios2_stub -lSceLibcBridge_stub \
+	-fno-builtin-memcpy -fno-builtin-memset -fno-builtin-memmove -fno-builtin-memcmp")
+	SET(CMAKE_CXX_STANDARD_LIBRARIES "${VITA_LIBS}")
+endif()
+
 if(NOT CMAKE_CROSSCOMPILING)
 	# Generate header file version-generated.h with git revision
 	# Run tool genversion at compile time which (re)generate file version-generated.h when needed
@@ -1079,6 +1102,7 @@ endif ()
 target_link_libraries(stratagus ${stratagus_LIBS})
 
 if(OpenMP_CXX_FOUND)
+	add_definitions(-DOPENMP_ENABLED)
 	target_compile_options(stratagus PRIVATE ${OpenMP_CXX_FLAGS})
 	target_link_libraries(stratagus OpenMP::OpenMP_CXX)
 endif()
@@ -1229,4 +1253,8 @@ if(NOT TARGET uninstall)
 
     add_custom_target(uninstall
         COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+endif()
+
+if(VITA)
+    include("${CMAKE_SOURCE_DIR}/vita/vita.cmake")
 endif()

@@ -233,6 +233,10 @@ struct EventCallback {
 #define GMASK   0x0000ff00
 #define BMASK   0x000000ff
 #define AMASK   0xff000000
+#define RMASK16 0xF800
+#define GMASK16 0x07E0
+#define BMASK16 0x001F
+#define AMASK16 0
 #else
 #define RSHIFT  8
 #define GSHIFT  16
@@ -242,6 +246,11 @@ struct EventCallback {
 #define GMASK   0x00ff0000
 #define BMASK   0xff000000
 #define AMASK   0x000000ff
+#endif
+
+#ifdef VITA
+#define VITA_FULLSCREEN_WIDTH 960
+#define VITA_FULLSCREEN_HEIGHT 544
 #endif
 
 class CVideo
@@ -326,6 +335,13 @@ public:
 	SDL_Cursor *blankCursor;
 	int Depth;
 	bool FullScreen;
+#ifdef VITA
+	void SetVitaRenderArea();
+	void SetTextInput(bool active);
+	SDL_Rect RenderRect;
+	uint32_t ControllerPointerSpeed = 10;
+	bool BilinearFilter = false;
+#endif
 };
 
 extern CVideo Video;

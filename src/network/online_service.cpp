@@ -56,6 +56,11 @@
 
 #include "./xsha1.h"
 
+#ifdef VITA
+#define StratagusLastModifiedDate ""
+#define StratagusLastModifiedTime ""
+#endif
+
 static void dump(uint8_t* buffer, int received_bytes) {
     std::cout << "Raw contents >>>" << std::endl;
     for (int i = 0; i < received_bytes; i += 8) {
@@ -2062,6 +2067,7 @@ class ConnectState : public OnlineState {
 #ifdef USE_WIN32
             uint32_t addr = inet_addr(CNetworkParameter::Instance.localHost.c_str());
             buffer.serialize32(addr);
+#elif defined(VITA)
 #else
             struct in_addr addr;
             inet_aton(CNetworkParameter::Instance.localHost.c_str(), &addr);

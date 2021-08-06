@@ -259,6 +259,53 @@ void CVideo::ClearScreen()
 	FillRectangle(ColorBlack, 0, 0, Video.Width, Video.Height);
 }
 
+#ifdef VITA
+void CVideo::SetVitaRenderArea()
+{
+	RenderRect.x = 0;
+	RenderRect.y = 0;
+	RenderRect.w = Width;
+	RenderRect.h = Height;
+
+	if (Width != VITA_FULLSCREEN_WIDTH || Height != VITA_FULLSCREEN_HEIGHT) {
+		if (FullScreen) {
+			//resize to fullscreen
+			if (1) {
+				//keep aspect ratio
+				if ((static_cast<float>(VITA_FULLSCREEN_WIDTH) / VITA_FULLSCREEN_HEIGHT)
+					>= (static_cast<float>(Width) / Height)) {
+					float scale = static_cast<float>(VITA_FULLSCREEN_HEIGHT) / Height;
+					RenderRect.w = Width * scale;
+					RenderRect.h = VITA_FULLSCREEN_HEIGHT;
+					RenderRect.x = (VITA_FULLSCREEN_WIDTH - RenderRect.w) / 2;
+				} else {
+					float scale = static_cast<float>(VITA_FULLSCREEN_WIDTH) / Width;
+					RenderRect.w = VITA_FULLSCREEN_WIDTH;
+					RenderRect.h = Height * scale;
+					RenderRect.y = (VITA_FULLSCREEN_HEIGHT - RenderRect.h) / 2;
+				}
+			} else {
+				RenderRect.w = VITA_FULLSCREEN_WIDTH;
+				RenderRect.h = VITA_FULLSCREEN_HEIGHT;
+			}
+		} else {
+			//center game area
+			RenderRect.x = (VITA_FULLSCREEN_WIDTH - Width) / 2;
+			RenderRect.y = (VITA_FULLSCREEN_HEIGHT - Height) / 2;
+		}
+	}
+}
+
+void CVideo::SetTextInput(bool active)
+{
+	if (active) {
+		SDL_StartTextInput();
+	} else {
+		SDL_StopTextInput();
+	}
+}
+#endif
+
 /**
 **  Resize the video screen.
 **
@@ -281,30 +328,55 @@ bool CVideo::ResizeScreen(int w, int h)
 	Width = w;
 	Height = h;
 
+#ifndef VITA
 	SDL_RenderSetLogicalSize(TheRenderer, w, h * VerticalPixelSize);
+#endif
+
+#ifdef VITA
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, BilinearFilter ? "1" : "0");
+#endif
 
 	// new surface
 	if (TheScreen) {
 		SDL_FreeSurface(TheScreen);
 	}
-	TheScreen = SDL_CreateRGBSurface(0, w, h, 32,
-									 RMASK,
-									 GMASK,
-									 BMASK,
-									 0); // AMASK);
+
+	if (Depth == 16) {
+		TheScreen = SDL_CreateRGBSurface(0, w, h, 16,
+										RMASK16,
+										GMASK16,
+										BMASK16,
+										0); // AMASK);
+	} else {
+		TheScreen = SDL_CreateRGBSurface(0, w, h, 32,
+										RMASK,
+										GMASK,
+										BMASK,
+										0); // AMASK);
+	}
 	Assert(SDL_MUSTLOCK(TheScreen) == 0);
 
 	// new texture
 	if (TheTexture) {
 		SDL_DestroyTexture(TheTexture);
 	}
-	TheTexture = SDL_CreateTexture(TheRenderer,
-	                               SDL_PIXELFORMAT_ARGB8888,
-	                               SDL_TEXTUREACCESS_STREAMING,
-	                               w, h);
+	if (Depth == 16) {
+		TheTexture = SDL_CreateTexture(TheRenderer,
+									SDL_PIXELFORMAT_RGB565,
+									SDL_TEXTUREACCESS_STREAMING,
+									w, h);
+	} else {
+		TheTexture = SDL_CreateTexture(TheRenderer,
+									SDL_PIXELFORMAT_ARGB8888,
+									SDL_TEXTUREACCESS_STREAMING,
+									w, h);
+	}
 
 	SetClipping(0, 0, w - 1, h - 1);
 
+#ifdef VITA
+	SetVitaRenderArea();
+#endif
 	return true;
 }
 

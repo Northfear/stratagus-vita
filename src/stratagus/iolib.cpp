@@ -57,6 +57,21 @@
 #include <bzlib.h>
 #endif
 
+#ifdef VITA
+#include <psp2/kernel/clib.h>
+#include "vita.h"
+#include "libc_bridge.h"
+
+#define FOPEN_LIMIT
+
+#define fopen sceLibcBridge_fopen
+#define fclose sceLibcBridge_fclose
+#define fread sceLibcBridge_fread
+#define fwrite sceLibcBridge_fwrite
+#define fseek sceLibcBridge_fseek
+#define ftell sceLibcBridge_ftell
+#endif
+
 class CFile::PImpl
 {
 public:
@@ -84,6 +99,12 @@ private:
 #ifdef USE_BZ2LIB
 	BZFILE *cl_bz;   /// bzip2 file pointer
 #endif // !USE_BZ2LIB
+#ifdef FOPEN_LIMIT
+	char fileName[256];
+	char fileFlags[8];
+	long filePosition = 0;
+	std::vector<char> writeBuf;
+#endif
 };
 
 CFile::CFile() : pimpl(new CFile::PImpl)
@@ -311,6 +332,12 @@ int CFile::PImpl::open(const char *name, long openflags)
 
 	cl_type = CLF_TYPE_INVALID;
 
+#ifdef FOPEN_LIMIT
+	strcpy(fileName, name);
+	filePosition = 0;
+	writeBuf.clear();
+#endif
+
 	if (openflags & CL_OPEN_WRITE) {
 #ifdef USE_BZ2LIB
 		if ((openflags & CL_WRITE_BZ2)
@@ -322,16 +349,37 @@ int CFile::PImpl::open(const char *name, long openflags)
 			if ((openflags & CL_WRITE_GZ)
 				&& (cl_gz = gzopen(strcat(strcpy(buf, name), ".gz"), openstring))) {
 				cl_type = CLF_TYPE_GZIP;
+#ifdef FOPEN_LIMIT
+				gzclose(cl_gz);
+				strcat(fileName, ".gz");
+				if ((openflags & CL_OPEN_READ) && (openflags & CL_OPEN_WRITE)) {
+					openstring = "rab";
+				} else if (openflags & CL_OPEN_WRITE) {
+					openstring = "ab";
+				}
+#endif
 			} else
 #endif
 				if ((cl_plain = fopen(name, openstring))) {
 					cl_type = CLF_TYPE_PLAIN;
+#ifdef FOPEN_LIMIT
+					fclose(cl_plain);
+					if ((openflags & CL_OPEN_READ) && (openflags & CL_OPEN_WRITE)) {
+						openstring = "a+b";
+					} else if (openflags & CL_OPEN_WRITE) {
+						openstring = "ab";
+					}
+#endif
 				}
 	} else {
 		if (!(cl_plain = fopen(name, openstring))) { // try plain first
 #ifdef USE_ZLIB
 			if ((cl_gz = gzopen(strcat(strcpy(buf, name), ".gz"), "rb"))) {
 				cl_type = CLF_TYPE_GZIP;
+#ifdef FOPEN_LIMIT
+				gzclose(cl_gz);
+				strcat(fileName, ".gz");
+#endif
 			} else
 #endif
 #ifdef USE_BZ2LIB
@@ -354,6 +402,11 @@ int CFile::PImpl::open(const char *name, long openflags)
 						if (!(cl_plain = fopen(name, "rb"))) {
 							cl_type = CLF_TYPE_INVALID;
 						}
+#ifdef FOPEN_LIMIT
+						else {
+							fclose(cl_plain);
+						}
+#endif
 					}
 				}
 #endif // USE_BZ2LIB
@@ -362,16 +415,27 @@ int CFile::PImpl::open(const char *name, long openflags)
 					fclose(cl_plain);
 					if ((cl_gz = gzopen(name, "rb"))) {
 						cl_type = CLF_TYPE_GZIP;
+#ifdef FOPEN_LIMIT
+						gzclose(cl_gz);
+#endif
 					} else {
 						if (!(cl_plain = fopen(name, "rb"))) {
 							cl_type = CLF_TYPE_INVALID;
 						}
+#ifdef FOPEN_LIMIT
+						else {
+							fclose(cl_plain);
+						}
+#endif
 					}
 				}
 #endif // USE_ZLIB
 			}
 			if (cl_type == CLF_TYPE_PLAIN) { // ok, it is not compressed
 				rewind(cl_plain);
+#ifdef FOPEN_LIMIT
+				fclose(cl_plain);
+#endif
 			}
 		}
 	}
@@ -380,6 +444,11 @@ int CFile::PImpl::open(const char *name, long openflags)
 		//fprintf(stderr, "%s in ", buf);
 		return -1;
 	}
+
+#ifdef FOPEN_LIMIT
+	strcpy(fileFlags, openstring);
+#endif
+
 	return 0;
 }
 
@@ -390,11 +459,31 @@ int CFile::PImpl::close()
 
 	if (tp != CLF_TYPE_INVALID) {
 		if (tp == CLF_TYPE_PLAIN) {
+#ifdef FOPEN_LIMIT
+			if (strchr(fileFlags, 'a') != NULL) {
+				cl_plain = fopen(fileName, fileFlags);
+				fwrite(&writeBuf[0], writeBuf.size(), 1, cl_plain);
+				fclose(cl_plain);
+				writeBuf.clear();
+			}
+			ret = 0;
+#else
 			ret = fclose(cl_plain);
+#endif
 		}
 #ifdef USE_ZLIB
 		if (tp == CLF_TYPE_GZIP) {
+#ifdef FOPEN_LIMIT
+			if (strchr(fileFlags, 'a') != NULL) {
+				cl_gz = gzopen(fileName, fileFlags);
+				ret = gzwrite(cl_gz, &writeBuf[0], writeBuf.size());
+				gzclose(cl_gz);
+				writeBuf.clear();
+			}
+			ret = 0;
+#else
 			ret = gzclose(cl_gz);
+#endif
 		}
 #endif // USE_ZLIB
 #ifdef USE_BZ2LIB
@@ -416,11 +505,27 @@ int CFile::PImpl::read(void *buf, size_t len)
 
 	if (cl_type != CLF_TYPE_INVALID) {
 		if (cl_type == CLF_TYPE_PLAIN) {
+#ifdef FOPEN_LIMIT
+			cl_plain = fopen(fileName, fileFlags);
+			fseek(cl_plain, filePosition, 0);
+#endif
 			ret = fread(buf, 1, len, cl_plain);
+#ifdef FOPEN_LIMIT
+			filePosition += ret;
+			fclose(cl_plain);
+#endif
 		}
 #ifdef USE_ZLIB
 		if (cl_type == CLF_TYPE_GZIP) {
+#ifdef FOPEN_LIMIT
+			cl_gz = gzopen(fileName, fileFlags);
+			gzseek(cl_gz, filePosition, 0);
+#endif
 			ret = gzread(cl_gz, buf, len);
+#ifdef FOPEN_LIMIT
+			filePosition += ret;
+			gzclose(cl_gz);
+#endif
 		}
 #endif // USE_ZLIB
 #ifdef USE_BZ2LIB
@@ -438,11 +543,25 @@ void CFile::PImpl::flush()
 {
 	if (cl_type != CLF_TYPE_INVALID) {
 		if (cl_type == CLF_TYPE_PLAIN) {
+#ifdef FOPEN_LIMIT
+			cl_plain = fopen(fileName, fileFlags);
+			fwrite(&writeBuf[0], writeBuf.size(), 1, cl_plain);
+			fclose(cl_plain);
+			writeBuf.clear();
+#else
 			fflush(cl_plain);
+#endif
 		}
 #ifdef USE_ZLIB
 		if (cl_type == CLF_TYPE_GZIP) {
+#ifdef FOPEN_LIMIT
+			cl_gz = gzopen(fileName, fileFlags);
+			gzwrite(cl_gz, &writeBuf[0], writeBuf.size());
+			gzclose(cl_gz);
+			writeBuf.clear();
+#else
 			gzflush(cl_gz, Z_SYNC_FLUSH);
+#endif
 		}
 #endif // USE_ZLIB
 #ifdef USE_BZ2LIB
@@ -462,11 +581,23 @@ int CFile::PImpl::write(const void *buf, size_t size)
 
 	if (tp != CLF_TYPE_INVALID) {
 		if (tp == CLF_TYPE_PLAIN) {
+#ifdef FOPEN_LIMIT
+			size_t writePos = writeBuf.size();
+			writeBuf.resize(writeBuf.size() + size);
+			memcpy(&writeBuf[writePos], buf, size);
+#else
 			ret = fwrite(buf, size, 1, cl_plain);
+#endif
 		}
 #ifdef USE_ZLIB
 		if (tp == CLF_TYPE_GZIP) {
+#ifdef FOPEN_LIMIT
+			size_t writePos = writeBuf.size();
+			writeBuf.resize(writeBuf.size() + size);
+			memcpy(&writeBuf[writePos], buf, size);
+#else
 			ret = gzwrite(cl_gz, buf, size);
+#endif
 		}
 #endif // USE_ZLIB
 #ifdef USE_BZ2LIB
@@ -487,11 +618,27 @@ int CFile::PImpl::seek(long offset, int whence)
 
 	if (tp != CLF_TYPE_INVALID) {
 		if (tp == CLF_TYPE_PLAIN) {
+#ifdef FOPEN_LIMIT
+			cl_plain = fopen(fileName, fileFlags);
+			fseek(cl_plain, filePosition, 0);
+#endif
 			ret = fseek(cl_plain, offset, whence);
+#ifdef FOPEN_LIMIT
+			filePosition = ftell(cl_plain);
+			fclose(cl_plain);
+#endif
 		}
 #ifdef USE_ZLIB
 		if (tp == CLF_TYPE_GZIP) {
+#ifdef FOPEN_LIMIT
+			cl_gz = gzopen(fileName, fileFlags);
+			gzseek(cl_gz, filePosition, 0);
+#endif
 			ret = gzseek(cl_gz, offset, whence);
+#ifdef FOPEN_LIMIT
+			filePosition = gztell(cl_gz);
+			gzclose(cl_gz);
+#endif
 		}
 #endif // USE_ZLIB
 #ifdef USE_BZ2LIB
@@ -513,11 +660,19 @@ long CFile::PImpl::tell()
 
 	if (tp != CLF_TYPE_INVALID) {
 		if (tp == CLF_TYPE_PLAIN) {
+#ifdef FOPEN_LIMIT
+			ret = filePosition;
+#else
 			ret = ftell(cl_plain);
+#endif
 		}
 #ifdef USE_ZLIB
 		if (tp == CLF_TYPE_GZIP) {
+#ifdef FOPEN_LIMIT
+			ret = filePosition;
+#else
 			ret = gztell(cl_gz);
+#endif
 		}
 #endif // USE_ZLIB
 #ifdef USE_BZ2LIB

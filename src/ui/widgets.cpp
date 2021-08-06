@@ -1238,7 +1238,10 @@ void ImageTextField::draw(gcn::Graphics *graphics)
 		fprintf(stderr, "Not all graphics for ImageTextField were set\n");
 		ExitFatal(1);
 	}
+#ifndef VITA
+	// UI resizes are causing massive slowdowns
 	img->Resize(getWidth(), img->getHeight());
+#endif
 	graphics->drawImage(img, 0, 0, 0, 0, getWidth(), img->getHeight());
 
 	if (hasFocus())
@@ -1343,7 +1346,9 @@ void ImageListBox::draw(gcn::Graphics *graphics)
 	int i, fontHeight;
 	int y = 0;
 	CGraphic *img = itemImage;
+#ifndef VITA
 	img->Resize(getWidth(), img->getHeight());
+#endif
 
 	fontHeight = std::max<int>(getFont()->getHeight(), img->getHeight());
 
@@ -1682,7 +1687,9 @@ void ImageListBoxWidget::draw(gcn::Graphics *graphics)
 
 	gcn::Rectangle rect = getContentDimension();
 	img = itemImage;
+#ifndef VITA
 	img->Resize(rect.width, img->getHeight());
+#endif
 	int y = 0;
 	while (y + img->getHeight() <= rect.height) {
 		graphics->drawImage(img, 0, 0, 0, y, getWidth(), img->getHeight());
@@ -1877,7 +1884,9 @@ void ImageListBoxWidget::drawHBar(gcn::Graphics *graphics)
 	CGraphic *img = NULL;
 
 	img = hBarButtonImage;
+#ifndef VITA
 	img->Resize(dim.width, dim.height);
+#endif
 	graphics->drawImage(img, 0, 0, 0, 0, img->getWidth(), img->getHeight());
 	img->SetOriginalSize();
 
@@ -1892,7 +1901,9 @@ void ImageListBoxWidget::drawVBar(gcn::Graphics *graphics)
 	CGraphic *img = NULL;
 
 	img = vBarButtonImage;
+#ifndef VITA
 	img->Resize(dim.width, dim.height);
+#endif
 	graphics->drawImage(img, 0, 0, 0, 0, img->getWidth(), img->getHeight());
 	img->SetOriginalSize();
 
@@ -2099,7 +2110,9 @@ void ImageDropDownWidget::draw(gcn::Graphics *graphics)
 	shadowColor.a = alpha;
 
 
+#ifndef VITA
 	img->Resize(getWidth(), h);
+#endif
 	graphics->drawImage(img, 0, 0, 0, 0, getWidth(), h);
 	img->SetOriginalSize();
 	
@@ -2177,7 +2190,9 @@ void ImageDropDownWidget::drawButton(gcn::Graphics *graphics)
 	} else {
 		img = this->DownNormalImage;
 	}
+#ifndef VITA
 	img->Resize(h, h);
+#endif
 	graphics->drawImage(img, 0, 0, x, y, h, h);
 	img->SetOriginalSize();
 }

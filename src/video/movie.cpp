@@ -344,6 +344,11 @@ int PlayMovie(const std::string &name)
 		rect.y = 0;
 	}
 
+#ifdef VITA
+	rect.x = (VITA_FULLSCREEN_WIDTH - rect.w) / 2;
+	rect.y = (VITA_FULLSCREEN_HEIGHT - rect.h) / 2;
+#endif
+
 	SDL_RenderClear(TheRenderer);
 	Video.ClearScreen();
 	SDL_Texture *yuv_overlay = SDL_CreateTexture(TheRenderer,
@@ -495,10 +500,10 @@ bool Movie::Load(const std::string &name, int w, int h)
 	rect->h = h;
 
 	surface = SDL_CreateRGBSurface(0, w, h, TheScreen->format->BitsPerPixel,
-								   0x00ff0000,
-								   0x0000ff00,
-								   0x000000ff,
-								   0xff000000);
+								   TheScreen->format->Rmask,
+								   TheScreen->format->Gmask,
+								   TheScreen->format->Bmask,
+								   TheScreen->format->Amask);
 
 	if (surface == NULL) {
 		fprintf(stderr, "SDL_CreateRGBSurface: %s\n", SDL_GetError());

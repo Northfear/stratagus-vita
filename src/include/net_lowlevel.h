@@ -50,11 +50,13 @@
 # include <netinet/in.h>
 # include <netdb.h>
 # include <sys/socket.h>
+# ifndef VITA
 # include <sys/ioctl.h>
 # include <ifaddrs.h>
 # ifndef __BEOS__
 #  include <net/if.h>
 #  include <arpa/inet.h>
+# endif
 # endif
 # define INVALID_SOCKET -1
 

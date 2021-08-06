@@ -35,7 +35,9 @@
 
 #include <string.h>
 #include <algorithm>
+#ifdef OPENMP_ENABLED
 #include <omp.h>
+#endif
 
 #include "stratagus.h"
 #include "fow_utils.h"
@@ -178,11 +180,16 @@ void CEasedTexture::CalcDeltas()
     const uint8_t *curr   = Frames[Curr].data();
     const uint8_t *next   = Frames[Next].data();
 
+#ifndef OPENMP_ENABLED
+    {
+        const uint16_t thisThread   = 0;
+        const uint16_t numOfThreads = 1;
+#else
     #pragma omp parallel
     {
         const uint16_t thisThread   = omp_get_thread_num();
         const uint16_t numOfThreads = omp_get_num_threads();
-        
+#endif
         const size_t lBound = TextureSize * (thisThread    ) / numOfThreads;
         const size_t uBound = TextureSize * (thisThread + 1) / numOfThreads;
 
@@ -303,11 +310,16 @@ void CBlurer::ProceedIteration(uint8_t *source, uint8_t *target, const uint8_t r
     const uint32_t iarr = (1 << 16) / (2 * radius + 1);
     
     /// Horizontal blur pass
+#ifndef OPENMP_ENABLED
+    {
+        const uint16_t thisThread   = 0;
+        const uint16_t numOfThreads = 1;
+#else
     #pragma omp parallel
     {
         const uint16_t thisThread   = omp_get_thread_num();
         const uint16_t numOfThreads = omp_get_num_threads();
-        
+#endif
         const uint16_t lBound = TextureHeight * (thisThread    ) / numOfThreads;
         const uint16_t uBound = TextureHeight * (thisThread + 1) / numOfThreads;
 
@@ -344,11 +356,16 @@ void CBlurer::ProceedIteration(uint8_t *source, uint8_t *target, const uint8_t r
     target = swap;  
 
     /// Vertical blur pass
+#ifndef OPENMP_ENABLED
+    {
+        const uint16_t thisThread   = 0;
+        const uint16_t numOfThreads = 1;
+#else
     #pragma omp parallel
     {
         const uint16_t thisThread   = omp_get_thread_num();
         const uint16_t numOfThreads = omp_get_num_threads();
-        
+#endif
         const uint16_t lBound = TextureWidth * (thisThread    ) / numOfThreads;
         const uint16_t uBound = TextureWidth * (thisThread + 1) / numOfThreads;
 

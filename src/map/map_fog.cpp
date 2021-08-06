@@ -34,7 +34,9 @@
 --  Includes
 ----------------------------------------------------------------------------*/
 #include <queue>
+#ifdef OPENMP_ENABLED
 #include <omp.h>
+#endif
 
 #include "stratagus.h"
 
@@ -668,10 +670,16 @@ void CViewport::DrawEnhancedFogOfWar(const bool isSoftwareRender /* = true */ )
 		const uint8_t fogG = fogColor.G;
 		const uint8_t fogB = fogColor.B;
 		
+#ifndef OPENMP_ENABLED
+		{
+			const uint16_t thisThread   = 0;
+			const uint16_t numOfThreads = 1;
+#else
 		#pragma omp parallel
 		{    
 			const uint16_t thisThread   = omp_get_thread_num();
 			const uint16_t numOfThreads = omp_get_num_threads();
+#endif
 			
 			const uint16_t lBound = (thisThread    ) * screenRect.h / numOfThreads; 
 			const uint16_t uBound = (thisThread + 1) * screenRect.h / numOfThreads; 

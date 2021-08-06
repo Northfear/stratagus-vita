@@ -140,7 +140,7 @@ void CMinimap::Create()
 	// Palette updated from UpdateMinimapTerrain()
 	SDL_PixelFormat *f = Map.TileGraphic->Surface->format;
 	MinimapTerrainSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, W, H, f->BitsPerPixel, f->Rmask, f->Gmask, f->Bmask, f->Amask);
-	MinimapSurface = SDL_CreateRGBSurface(SDL_SWSURFACE,  W, H, 32, TheScreen->format->Rmask, TheScreen->format->Gmask, TheScreen->format->Bmask, 0);
+	MinimapSurface = SDL_CreateRGBSurface(SDL_SWSURFACE,  W, H, TheScreen->format->BitsPerPixel, TheScreen->format->Rmask, TheScreen->format->Gmask, TheScreen->format->Bmask, 0);
 
 	UpdateTerrain();
 

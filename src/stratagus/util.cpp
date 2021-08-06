@@ -51,6 +51,10 @@
 #include "st_backtrace.h"
 #endif
 
+#ifdef VITA
+#include <psp2/kernel/clib.h>
+#endif
+
 /*----------------------------------------------------------------------------
 --  Random
 ----------------------------------------------------------------------------*/
@@ -288,7 +292,7 @@ errno_t strcat_s(char *dst, size_t dstsize, const char *src)
 }
 #endif
 
-#if !defined(HAVE_STRCASESTR)
+#if !defined(HAVE_STRCASESTR) || defined(VITA)
 /**
 **  Case insensitive version of strstr
 **
@@ -487,9 +491,19 @@ void AbortAt(const char *file, int line, const char *funcName, const char *condi
 
 void PrintOnStdOut(const char *format, ...)
 {
+#ifdef VITA
+	va_list valist;
+	va_start(valist, format);
+    char msg[200];
+	vsprintf(msg, format, valist);
+    sceClibPrintf("%s", msg);
+	va_end(valist);
+	fflush(stdout);
+#else
 	va_list valist;
 	va_start(valist, format);
 	vprintf(format, valist);
 	va_end(valist);
 	fflush(stdout);
+#endif
 }

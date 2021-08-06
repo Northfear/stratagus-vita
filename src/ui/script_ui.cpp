@@ -72,6 +72,35 @@ CPreference Preference;
 /**
 ** <b>Description</b>
 **
+**  Set speed of cursor movement with analog sticks
+**
+**  @param l  Lua state.
+**
+** Example:
+**
+** <div class="example"><code><strong>SetMouseScrollSpeed</strong>(2)</code></div>
+*/
+static int CclSetControllerSpeed(lua_State *l)
+{
+	LuaCheckArgs(l, 1);
+	if (CclInConfigFile) {
+		Video.ControllerPointerSpeed = LuaToNumber(l, 1);
+	}
+	return 0;
+}
+
+static int CclSetBilinearFilter(lua_State *l)
+{
+	LuaCheckArgs(l, 1);
+	if (CclInConfigFile) {
+		Video.BilinearFilter = LuaToBoolean(l, 1);
+	}
+	return 0;
+}
+
+/**
+** <b>Description</b>
+**
 **  Set speed of key scroll
 **
 **  @param l  Lua state.
@@ -1290,6 +1319,8 @@ void UserInterfaceCclRegister()
 	CursorCclRegister();
 	lua_register(Lua, "AddMessage", CclAddMessage);
 
+	lua_register(Lua, "SetControllerSpeed", CclSetControllerSpeed);
+	lua_register(Lua, "SetBilinearFilter", CclSetBilinearFilter);
 	lua_register(Lua, "SetKeyScrollSpeed", CclSetKeyScrollSpeed);
 	lua_register(Lua, "GetKeyScrollSpeed", CclGetKeyScrollSpeed);
 	lua_register(Lua, "SetMouseScrollSpeed", CclSetMouseScrollSpeed);

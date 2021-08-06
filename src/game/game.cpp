@@ -78,6 +78,10 @@
 #include "video.h"
 
 
+#ifdef VITA
+#include "vita.h"
+#endif
+
 extern void CleanGame();
 
 /*----------------------------------------------------------------------------
@@ -267,7 +271,7 @@ static void WriteMapPreview(const char *mapname, CMap &map)
 	const int rectSize = 5; // size of rectange used for player start spots
 	const SDL_PixelFormat *fmt = MinimapSurface->format;
 	SDL_Surface *preview = SDL_CreateRGBSurface(SDL_SWSURFACE,
-												UI.Minimap.W, UI.Minimap.H, 32, fmt->Rmask, fmt->Gmask, fmt->Bmask, 0);
+												UI.Minimap.W, UI.Minimap.H, fmt->BitsPerPixel, fmt->Rmask, fmt->Gmask, fmt->Bmask, 0);
 	SDL_BlitSurface(MinimapSurface, NULL, preview, NULL);
 
 	SDL_LockSurface(preview);

@@ -16,11 +16,13 @@ https://github.com/Wargus/wargus/releases/tag/v3.1.2
 
 https://github.com/Wargus/war1gus/releases/tag/v3.1.2
 
-3. On the first launch you will be asked for a copy of the original Warcraft 1/2. Select the path to the game or GoG installer and wait until installer extracts/decodes the data.
+3. On the first launch you will be asked for a copy of the original Warcraft 1/2. Select the path to the game or GoG installer and wait until installer extracts/ecodes the data.
 
 4. Once the data is extracted and you have a working PC installation of Wargus/War1gus, it's time to copy the game data to Vita.
 
-Copy `campaigns`, `graphics`, `maps`, `music`, `sounds` and `videos` from Wargus/War1gus folders and paste them into `ux0:data/Wargus/` for Wargus or into `ux0:data/War1gus/` for War1gus.
+If you're were using portable version of Wargus/War1gus, then the extracted data should be in the installation folder. Otherwise the game data should be located at `Documents\Stratagus\data.Wargus` or `Documents\Stratagus\data.War1gus` (for Windows versions).
+
+Copy `campaigns`, `graphics`, `maps`, `music`, `sounds` and `videos` from Wargus/War1gus data folders and paste them into `ux0:data/Wargus/` for Wargus or into `ux0:data/War1gus/` for War1gus.
 
 Copy `scripts/wc2-config.lua` for Wargus or `scripts/wc1-config.lua` for War1gus and paste the file into `ux0:data/Wargus/scripts/`/`ux0:data/War1gus/scripts/`.
 

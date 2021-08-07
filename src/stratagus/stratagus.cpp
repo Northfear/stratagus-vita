@@ -239,7 +239,7 @@ extern void beos_init(int argc, char **argv);
 #include "fios.h"
 
 int sceLibcHeapSize = 2 * 1024 * 1024;
-int _newlib_heap_size_user = 335 * 1024 * 1024;
+int _newlib_heap_size_user = 330 * 1024 * 1024;
 
 
 void *memcpy(void *destination, const void *source, size_t n)

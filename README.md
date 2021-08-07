@@ -8,19 +8,23 @@ So basically you'll have to install Wargus/War1gus on your PC, extract game data
 
 ### Steps:
 
-1. Install stratagus.vpk. Extract content of stratagus_data.zip into `ux0:data/`.
+1. Download and install stratagus.vpk. Extract content of stratagus_data.zip into `ux0:data/`.
+
+    https://github.com/Northfear/stratagus-vita/releases
 
 2. Download Wargus/War1gus and install it to your PC (Only use the versions linked below, since version mismatch may cause problems)
 
-https://github.com/Wargus/wargus/releases/tag/v3.1.2
+    https://github.com/Wargus/wargus/releases/tag/v3.1.2
 
-https://github.com/Wargus/war1gus/releases/tag/v3.1.2
+    https://github.com/Wargus/war1gus/releases/tag/v3.1.2
 
-3. On the first launch you will be asked for a copy of the original Warcraft 1/2. Select the path to the game or GoG installer and wait until installer extracts/ecodes the data.
+(You may need to disable antivirus during Wargus installation, since it may break ecoding process in some cases)
+
+3. On the first launch you will be asked for a copy of the original Warcraft 1/2. Select the path to the game or GoG installer and wait until installer extracts/encodes the data.
 
 4. Once the data is extracted and you have a working PC installation of Wargus/War1gus, it's time to copy the game data to Vita.
 
-If you're were using portable version of Wargus/War1gus, then the extracted data should be in the installation folder. Otherwise the game data should be located at `Documents\Stratagus\data.Wargus` or `Documents\Stratagus\data.War1gus` (for Windows versions).
+If you were using portable version of Wargus/War1gus, then the extracted data should be in the installation folder. Otherwise the game data should be located at `Documents\Stratagus\data.Wargus` or `Documents\Stratagus\data.War1gus` (for Windows versions).
 
 Copy `campaigns`, `graphics`, `maps`, `music`, `sounds` and `videos` from Wargus/War1gus data folders and paste them into `ux0:data/Wargus/` for Wargus or into `ux0:data/War1gus/` for War1gus.
 

@@ -882,11 +882,16 @@ void CFogOfWar::DrawTiled(CViewport &viewport)
 	const int ex = fogSurfaceClipRect.x + fogSurfaceClipRect.w;
 	const int ey = fogSurfaceClipRect.y + fogSurfaceClipRect.h;
 
+#ifndef OPENMP_ENABLED
+    {
+        const uint16_t thisThread   = 0;
+        const uint16_t numOfThreads = 1;
+#else
     #pragma omp parallel
     {    
         const uint16_t thisThread   = omp_get_thread_num();
         const uint16_t numOfThreads = omp_get_num_threads();
-      
+#endif
         uint16_t lBound = thisThread * fogSurfaceClipRect.h / numOfThreads;
         lBound -= lBound % PixelTileSize.y;
         uint16_t uBound = ey;

@@ -246,7 +246,7 @@ int LuaLoadFile(const std::string &file, const std::string &strArg)
 	if (GetFileContent(file, content) == false) {
 		return -1;
 	}
-	if ((file.rfind("stratagus.lua") != -1 || file.find("scripts/") != -1) && (file.rfind("-config.lua") == -1)) {
+	if (file.rfind("stratagus.lua") != -1) {
 		FileChecksums ^= fletcher32(content);
 		DebugPrint("FileChecksums after loading %s: %x\n" _C_ file.c_str() _C_ FileChecksums);
 	}
@@ -2149,9 +2149,11 @@ void InitLua()
 	// For security we don't load all libs
 	static const luaL_Reg lualibs[] = {
 		{"", luaopen_base},
-		//{LUA_LOADLIBNAME, luaopen_package},
 		{LUA_TABLIBNAME, luaopen_table},
-		//{LUA_IOLIBNAME, luaopen_io},
+#ifdef DEBUG
+		{LUA_IOLIBNAME, luaopen_io},
+		{LUA_LOADLIBNAME, luaopen_package},
+#endif
 		{LUA_OSLIBNAME, luaopen_os},
 		{LUA_STRLIBNAME, luaopen_string},
 		{LUA_MATHLIBNAME, luaopen_math},
@@ -2171,6 +2173,20 @@ void InitLua()
 		lua_call(Lua, 1, 0);
 #endif
 	}
+#ifdef DEBUG
+	static const char* mobdebug =
+#include "./lua/mobdebug.h"
+;
+	int status = luaL_loadbuffer(Lua, mobdebug, strlen(mobdebug), "mobdebug.lua");
+	if (!status) {
+		status = LuaCall(0, 0, false);
+		if (!status) {
+			fprintf(stderr, "mobdebug loaded and available via mobdebug.start()\n");
+			lua_setglobal(Lua, "mobdebug");
+		}
+	}
+	report(status, false);
+#endif
 	tolua_stratagus_open(Lua);
 	lua_settop(Lua, 0);  // discard any results
 }

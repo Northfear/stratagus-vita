@@ -670,8 +670,10 @@ static int CclRemoveUnit(lua_State *l)
 	lua_pushvalue(l, 1);
 	CUnit *unit = CclGetUnit(l);
 	lua_pop(l, 1);
-	unit->Remove(NULL);
-	LetUnitDie(*unit);
+	if (unit) {
+		unit->Remove(NULL);
+		LetUnitDie(*unit);
+	}
 	lua_pushvalue(l, 1);
 	return 1;
 }
@@ -760,7 +762,9 @@ static int CclTransformUnit(lua_State *l)
 	lua_pushvalue(l, 2);
 	const CUnitType *unittype = TriggerGetUnitType(l);
 	lua_pop(l, 1);
-	CommandUpgradeTo(*targetUnit, *(CUnitType*)unittype, 1, true);
+	if (unittype && targetUnit) {
+		CommandUpgradeTo(*targetUnit, *(CUnitType*)unittype, 1, true);
+	}
 	lua_pushvalue(l, 1);
 	return 1;
 }
@@ -1081,11 +1085,19 @@ static int CclGetUnits(lua_State *l)
 }
 
 /**
+** <b>Description</b>
+**
 **  Get a player's units in rectangle box specified with 2 coordinates
 **
 **  @param l  Lua state.
 **
 **  @return   Array of units.
+**
+** Example:
+**
+** <div class="example"><code>circlePower = CreateUnit("unit-circle-of-power", 15, {59, 4})
+**		-- Get the units near the circle of power.
+**      unitsOnCircle = <strong>GetUnitsAroundUnit</strong>(circle,1,true)</code></div>
 */
 static int CclGetUnitsAroundUnit(lua_State *l)
 {

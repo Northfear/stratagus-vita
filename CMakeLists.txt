@@ -667,18 +667,33 @@ endif()
 
 if(NOT WIN32 OR NOT MSVC)
 	include(CheckCXXSourceCompiles)
-	set(FS_SRC "
-	#include <experimental/filesystem> 
-	namespace fs = std::experimental::filesystem;
-	int main(int argc, char **argv) {
-		fs::path p = fs::path(\".\");
-		if (fs::absolute(p).is_absolute()) {
-			return 0;
-		} else {
-			return 1;
+	if(VITA)
+		set(FS_SRC "
+		#include <filesystem> 
+		namespace fs = std::filesystem;
+		int main(int argc, char **argv) {
+			fs::path p = fs::path(\".\");
+			if (fs::absolute(p).is_absolute()) {
+				return 0;
+			} else {
+				return 1;
+			}
 		}
-	}
-	")
+		")
+	else()
+		set(FS_SRC "
+		#include <experimental/filesystem> 
+		namespace fs = std::experimental::filesystem;
+		int main(int argc, char **argv) {
+			fs::path p = fs::path(\".\");
+			if (fs::absolute(p).is_absolute()) {
+				return 0;
+			} else {
+				return 1;
+			}
+		}
+		")
+	endif()
 	check_cxx_source_compiles("${FS_SRC}" HAS_17_FS)
 	if(NOT HAS_17_FS)
 		set(CMAKE_REQUIRED_LIBRARIES stdc++fs)
@@ -1134,15 +1149,16 @@ message("==================================")
 # Compile Stratagus
 
 if(VITA)
-    add_definitions(-DVITA)
-	add_definitions(-DOPENMP_ENABLED)
+	add_definitions(-DVITA)
 	include_directories(src/vita)
 	set(stratagus_SRCS ${stratagus_SRCS} ${vita_SRCS})
 	set(VITA_FLAGS "-Ofast -mcpu=cortex-a9 -mfpu=neon -fgraphite-identity -floop-nest-optimize -fno-lto -fopenmp")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VITA_FLAGS}")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VITA_FLAGS}")
-	set(VITA_LIBS "-lSDL2 -pthread -fopenmp -ljpeg -lpng -lwebp -lz -lvorbisfile -lvorbis -logg -lmikmod -lScePower_stub -lSceAudio_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub \
-	-lSceDisplay_stub -lSceGxm_stub -lSceCommonDialog_stub -lFLAC -lmpg123 -lSceMotion_stub -lSceAppUtil_stub -lSceFios2_stub -lSceLibcBridge_stub \
+	set(VITA_LIBS "-lSDL2 -pthread -fopenmp -ljpeg -lpng -lwebp -lz -lvorbisfile -lvorbis -logg -lmikmod -lFLAC -lmpg123 -lmodplug \
+	-lSceGxm_stub -lSceDisplay_stub -lSceCtrl_stub -lSceAppMgr_stub -lSceAppUtil_stub -lSceAudio_stub -lSceAudioIn_stub -lSceSysmodule_stub \
+	-lSceDisplay_stub -lSceCtrl_stub -lSceIofilemgr_stub -lSceCommonDialog_stub -lSceTouch_stub -lSceHid_stub -lSceMotion_stub -lScePower_stub \
+	-lSceProcessmgr_stub -lSceIme_stub -lSceFios2_stub -lSceLibcBridge_stub \
 	-fno-builtin-memcpy -fno-builtin-memset -fno-builtin-memmove -fno-builtin-memcmp")
 	SET(CMAKE_CXX_STANDARD_LIBRARIES "${VITA_LIBS}")
 endif()
@@ -1195,8 +1211,10 @@ target_link_libraries(stratagus ${stratagus_LIBS})
 
 if(OpenMP_CXX_FOUND)
 	add_definitions(-DUSE_OPENMP)
-	target_compile_options(stratagus PRIVATE ${OpenMP_CXX_FLAGS})
-	target_link_libraries(stratagus OpenMP::OpenMP_CXX)
+	if(NOT VITA)
+		target_compile_options(stratagus PRIVATE ${OpenMP_CXX_FLAGS})
+		target_link_libraries(stratagus OpenMP::OpenMP_CXX)
+	endif()
 endif()
 
 

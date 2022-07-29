@@ -305,18 +305,12 @@ void CFogOfWar::GenerateFog()
     CurrUpscaleTableExplored = GameSettings.RevealMap != MapRevealModes::cHidden ? UpscaleTableRevealed : UpscaleTableExplored;
 
     const uint8_t visibleThreshold = Map.NoFogOfWar ? 1 : 2;
-    
-#ifndef OPENMP_ENABLED
-    {
-        const uint16_t thisThread   = 0;
-        const uint16_t numOfThreads = 1;
-#else
+
     #pragma omp parallel
     {
         const uint16_t thisThread   = omp_get_thread_num();
         const uint16_t numOfThreads = omp_get_num_threads();
-#endif
-        
+
         const uint16_t lBound = (thisThread    ) * Map.Info.MapHeight / numOfThreads;
         const uint16_t uBound = (thisThread + 1) * Map.Info.MapHeight / numOfThreads;
 
@@ -506,18 +500,12 @@ void CFogOfWar::FogUpscale4x4()
     const uint16_t textureHeight = FogTexture.GetHeight() / 4;
     const uint16_t nextRowOffset = textureWidth * 4;
 
-#ifndef OPENMP_ENABLED
-    {
-        const uint16_t thisThread   = 0;
-        const uint16_t numOfThreads = 1;
-#else
     #pragma omp parallel
     {
 
         const uint16_t thisThread   = omp_get_thread_num();
         const uint16_t numOfThreads = omp_get_num_threads();
-#endif
-        
+
         const uint16_t lBound = (thisThread    ) * textureHeight / numOfThreads;
         const uint16_t uBound = (thisThread + 1) * textureHeight / numOfThreads;
 
@@ -559,18 +547,12 @@ void CFogOfWar::UpscaleBilinear(const uint8_t *const src, const SDL_Rect &srcRec
     /// FIXME: '-1' shouldn't be here, but without it the resulting fog has a shift to the left and upward
     const int32_t xRatio = (int32_t(srcRect.w - 1) << 16) / trgRect.w;
     const int32_t yRatio = (int32_t(srcRect.h - 1) << 16) / trgRect.h;
-    
-#ifndef OPENMP_ENABLED
-    {
-        const uint16_t thisThread   = 0;
-        const uint16_t numOfThreads = 1;
-#else
+
     #pragma omp parallel
     {    
         const uint16_t thisThread   = omp_get_thread_num();
         const uint16_t numOfThreads = omp_get_num_threads();
-#endif
-        
+
         const uint16_t lBound = (thisThread    ) * trgRect.h / numOfThreads; 
         const uint16_t uBound = (thisThread + 1) * trgRect.h / numOfThreads; 
 
@@ -632,17 +614,11 @@ void CFogOfWar::UpscaleSimple(const uint8_t *src, const SDL_Rect &srcRect, const
     
     uint32_t *const target =(uint32_t*)trgSurface->pixels;
 
-#ifndef OPENMP_ENABLED
-    {
-        const uint16_t thisThread   = 0;
-        const uint16_t numOfThreads = 1;
-#else
     #pragma omp parallel
     {    
         const uint16_t thisThread   = omp_get_thread_num();
         const uint16_t numOfThreads = omp_get_num_threads();
-#endif
-        
+
         const uint16_t lBound = (thisThread    ) * srcRect.h / numOfThreads; 
         const uint16_t uBound = (thisThread + 1) * srcRect.h / numOfThreads; 
 
@@ -878,16 +854,11 @@ void CFogOfWar::DrawTiled(CViewport &viewport)
 	const int ex = fogSurfaceClipRect.x + fogSurfaceClipRect.w;
 	const int ey = fogSurfaceClipRect.y + fogSurfaceClipRect.h;
 
-#ifndef OPENMP_ENABLED
-    {
-        const uint16_t thisThread   = 0;
-        const uint16_t numOfThreads = 1;
-#else
     #pragma omp parallel
     {    
         const uint16_t thisThread   = omp_get_thread_num();
         const uint16_t numOfThreads = omp_get_num_threads();
-#endif
+
         uint16_t lBound = thisThread * fogSurfaceClipRect.h / numOfThreads;
         lBound -= lBound % PixelTileSize.y;
         uint16_t uBound = ey;

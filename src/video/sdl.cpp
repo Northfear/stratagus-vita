@@ -121,7 +121,7 @@ const double CONTROLLER_AXIS_SPEEDUP = 1.03;
 enum
 {
 	CONTROLLER_L_DEADZONE = 3000,
-	CONTROLLER_R_DEADZONE = 6000
+	CONTROLLER_R_DEADZONE = 25000
 };
 
 SDL_GameController* gameController = nullptr;
@@ -1340,11 +1340,10 @@ void ToggleFullScreen()
 	SDL_SetWindowFullscreen(TheWindow, flags ^ SDL_WINDOW_FULLSCREEN_DESKTOP);
 #endif
 
+	Video.FullScreen = (flags ^ SDL_WINDOW_FULLSCREEN_DESKTOP) ? 1 : 0;
 #ifdef VITA
 	Video.SetVitaRenderArea();
 #endif
-
-	Video.FullScreen = (flags ^ SDL_WINDOW_FULLSCREEN_DESKTOP) ? 1 : 0;
 }
 
 //@}

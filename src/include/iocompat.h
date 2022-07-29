@@ -71,8 +71,6 @@
 
 #ifdef USE_WIN32
 #define makedir(dir, permissions) mkdir(dir)
-#elif defined(VITA)
-#define makedir(dir, permissions) sceIoMkdir(dir, 0777)
 #else
 #define makedir(dir, permissions) mkdir(dir, permissions)
 #endif

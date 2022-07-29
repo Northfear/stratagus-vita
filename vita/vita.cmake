@@ -9,7 +9,7 @@ else()
     set(EXECUTABLE_NAME stratagus)
 endif()
 
-set(VITA_VERSION "03.13")
+set(VITA_VERSION "03.30")
 
 set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d ATTRIBUTE2=12")
 vita_create_self(${EXECUTABLE_NAME}.self ${EXECUTABLE_NAME})
@@ -24,5 +24,3 @@ vita_create_vpk(${EXECUTABLE_NAME}.vpk ${VITA_TITLEID} ${EXECUTABLE_NAME}.self
     FILE ${CMAKE_SOURCE_DIR}/vita/sce_sys/livearea/contents/wc1.png sce_sys/livearea/contents/wc1.png
     FILE ${CMAKE_SOURCE_DIR}/vita/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
 )
-
-add_dependencies(${EXECUTABLE_NAME}.self stratagus)

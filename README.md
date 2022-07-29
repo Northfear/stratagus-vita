@@ -48,7 +48,7 @@ Copy `scripts/wc2-config.lua` for Wargus or `scripts/wc1-config.lua` for War1gus
 ```
 mkdir build && cd build
 export SDLDIR=$VITASDK/arm-vita-eabi/
-cmake .. -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake -DVITA=true -DENABLE_STATIC=ON -DENABLE_USEGAMEDIR=ON -DCMAKE_BUILD_TYPE=None
+cmake .. -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake -DVITA=true -DENABLE_STATIC=ON -DENABLE_USEGAMEDIR=ON -DEAGER_LOAD=ON -DCMAKE_BUILD_TYPE=None
 make
 ```
 
@@ -77,8 +77,6 @@ You can change cursor movement speed by editing `ux0:data/Wargus/wc2/preferences
 Multiplayer is not supported on PS Vita.
 
 Game startup/loading times are around 1-2 minutes for Wargus.
-
-Use `legacy` fog of war, since it's much faster (should be on by default if you haven't replaced `scripts` folder).
 
 Auto-cast with mages can cause pretty big slowdowns in War1gus (probably in Wargus too). No performance problems with auto healing and clerics tho.
 

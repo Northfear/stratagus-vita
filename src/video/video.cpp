@@ -462,17 +462,12 @@ void BlitSurfaceAlphaBlending_32bpp(const SDL_Surface *srcSurface, const SDL_Rec
 	const uint32_t *const src = static_cast<uint32_t *>(srcSurface->pixels);
 	uint32_t *const dst = static_cast<uint32_t *>(dstSurface->pixels);
 
-#ifndef OPENMP_ENABLED
-    {
-        const uint16_t thisThread   = 0;
-        const uint16_t numOfThreads = 1;
-#else
 	#pragma omp parallel if(enableMT)
 	{    
 		/// TODO: change numOfThreads for small rectangles to prevent False Sharing
 		const uint16_t thisThread   = omp_get_thread_num();
 		const uint16_t numOfThreads = omp_get_num_threads();
-#endif
+
 		const uint16_t lBound = (thisThread    ) * dstWrkRect.h / numOfThreads; 
 		const uint16_t uBound = (thisThread + 1) * dstWrkRect.h / numOfThreads; 
 

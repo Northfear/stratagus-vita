@@ -80,6 +80,7 @@ CPreference Preference;
 **
 ** <div class="example"><code><strong>SetMouseScrollSpeed</strong>(2)</code></div>
 */
+#ifdef VITA
 static int CclSetControllerSpeed(lua_State *l)
 {
 	LuaCheckArgs(l, 1);
@@ -97,7 +98,7 @@ static int CclSetBilinearFilter(lua_State *l)
 	}
 	return 0;
 }
-
+#endif
 /**
 ** <b>Description</b>
 **
@@ -1380,9 +1381,10 @@ void UserInterfaceCclRegister()
 {
 	CursorCclRegister();
 	lua_register(Lua, "AddMessage", CclAddMessage);
-
+#ifdef VITA
 	lua_register(Lua, "SetControllerSpeed", CclSetControllerSpeed);
 	lua_register(Lua, "SetBilinearFilter", CclSetBilinearFilter);
+#endif
 	lua_register(Lua, "SetKeyScrollSpeed", CclSetKeyScrollSpeed);
 	lua_register(Lua, "GetKeyScrollSpeed", CclGetKeyScrollSpeed);
 	lua_register(Lua, "SetMouseScrollSpeed", CclSetMouseScrollSpeed);

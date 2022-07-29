@@ -257,8 +257,31 @@ static const CUnit *GetUnitRef(const CUnit &unit, EnumUnit e)
 	const CUnit *unitToDraw = GetUnitRef(unit, this->UnitRef);
 
 	if (unitToDraw && unitToDraw->Type->Icon.Icon) {
-		unitToDraw->Type->Icon.Icon->DrawUnitIcon(*UI.SingleSelectedButton->Style, 0, this->Pos, "",
-			unitToDraw->RescuedFrom ? unitToDraw->RescuedFrom->Index : unitToDraw->Player->Index);
+		if (this->ButtonIcon) {
+			unitToDraw->Type->Icon.Icon->DrawUnitIcon(*UI.SingleSelectedButton->Style, 0, this->Pos, "",
+				unitToDraw->RescuedFrom ? unitToDraw->RescuedFrom->Index : unitToDraw->Player->Index);
+		} else if (this->SingleSelectionIcon) {
+			unitToDraw->Type->Icon.Icon->DrawSingleSelectionIcon(*UI.SingleSelectedButton->Style, 0, this->Pos, "", *unitToDraw);
+		} else if (this->GroupSelectionIcon) {
+			unitToDraw->Type->Icon.Icon->DrawGroupSelectionIcon(*UI.SingleSelectedButton->Style, 0, this->Pos, "", *unitToDraw);
+		} else if (this->TransportIcon) {
+			unitToDraw->Type->Icon.Icon->DrawContainedIcon(*UI.SingleSelectedButton->Style, 0, this->Pos, "", *unitToDraw);
+		}
+	}
+}
+
+/**
+**  Draw the graphic
+*/
+/* virtual */ void CContentTypeGraphic::Draw(const CUnit &, CFont *) const
+{
+	CGraphic *g = CGraphic::Get(this->graphic);
+	if (g) {
+		if (this->frame) {
+			g->DrawFrameClip(this->frame, this->Pos.x, this->Pos.y);
+		} else {
+			g->DrawClip(this->Pos.x, this->Pos.y);
+		}
 	}
 }
 
@@ -284,22 +307,28 @@ static const CUnit *GetUnitRef(const CUnit &unit, EnumUnit e)
 	} else {
 		f = (100 * EvalNumber(this->ValueFunc)) / this->ValueMax;
 		f = f > 100 ? 100 : f;
-		if (f < 0) {
-			return;
-		}
+	}
+	if (f < 0) {
+		return;
 	}
 	int i = 0;
 
 	// get to right color
-	while (f < this->values[i]) {
+	while (static_cast<unsigned int>(f) < this->values[i]) {
 		i++;
 	}
 	color = IndexToColor(this->colors[i]);
 
 	if (this->hasBorder) {
-		// Border
-		Video.FillRectangleClip(ColorBlack, this->Pos.x - 2, this->Pos.y - 2,
-								this->Width + 3, this->Height + 3);
+		// Border. We have a simple heuristic to determine how big it is...
+		// TODO: make configurable?
+		if (this->Height <= 6) {
+			Video.FillRectangleClip(this->hasBorder, this->Pos.x - 2, this->Pos.y - 2,
+									this->Width + 2, this->Height + 2);
+		} else {
+			Video.FillRectangleClip(this->hasBorder, this->Pos.x - 2, this->Pos.y - 2,
+									this->Width + 3, this->Height + 3);
+		}
 	}
 
 	Video.FillRectangleClip(color, this->Pos.x - 1, this->Pos.y - 1,
@@ -487,12 +516,52 @@ static EnumUnit Str2EnumUnit(lua_State *l, const char *s)
 
 /* virtual */ void CContentTypeIcon::Parse(lua_State *l)
 {
+	SingleSelectionIcon = GroupSelectionIcon = TransportIcon = 0;
+	ButtonIcon = 1;
 	for (lua_pushnil(l); lua_next(l, -2); lua_pop(l, 1)) {
 		const char *key = LuaToString(l, -2);
 		if (!strcmp(key, "Unit")) {
 			this->UnitRef = Str2EnumUnit(l, LuaToString(l, -1));
+		} else if (!strcmp(key, "SingleSelection")) {
+			bool flag = LuaToBoolean(l, -1);
+			if (!ButtonIcon && flag) {
+				LuaError(l, "Only one of SingleSelection, GroupSelection, TransportSelection can be chosen");
+			}
+			ButtonIcon = !flag;
+			SingleSelectionIcon = flag;
+		} else if (!strcmp(key, "GroupSelection")) {
+			bool flag = LuaToBoolean(l, -1);
+			if (!ButtonIcon && flag) {
+				LuaError(l, "Only one of SingleSelection, GroupSelection, TransportSelection can be chosen");
+			}
+			ButtonIcon = !flag;
+			GroupSelectionIcon = flag;
+		} else if (!strcmp(key, "TransportSelection")) {
+			bool flag = LuaToBoolean(l, -1);
+			if (!ButtonIcon && flag) {
+				LuaError(l, "Only one of SingleSelection, GroupSelection, TransportSelection can be chosen");
+			}
+			ButtonIcon = !flag;
+			TransportIcon = flag;
 		} else {
 			LuaError(l, "'%s' invalid for method 'Icon' in DefinePanelContents" _C_ key);
+		}
+	}
+}
+
+/* virtual */ void CContentTypeGraphic::Parse(lua_State *l)
+{
+	if (lua_isstring(l, -1)) {
+		this->graphic = LuaToString(l, -1);
+		this->frame = 0;
+	} else if (lua_istable(l, -1)) {
+		for (lua_pushnil(l); lua_next(l, -2); lua_pop(l, 1)) {
+			const char *key = LuaToString(l, -2);
+			if (!strcmp(key, "Graphic")) {
+				this->graphic = LuaToString(l, -1);
+			} else if (!strcmp(key, "Frame")) {
+				this->frame = LuaToNumber(l, -1);
+			}
 		}
 	}
 }
@@ -562,7 +631,18 @@ static EnumUnit Str2EnumUnit(lua_State *l, const char *s)
 				LuaError(l, "the last {percentage, color} pair must be for 0%%");
 			}
 		} else if (!strcmp(key, "Border")) {
-			this->hasBorder = LuaToBoolean(l, -1);
+			if (lua_isboolean(l, -1)) {
+				if (LuaToBoolean(l, -1)) {
+					this->hasBorder = 1;
+				} else {
+					this->hasBorder = 0;
+				}
+			} else {
+				this->hasBorder = LuaToUnsignedNumber(l, -1);
+				if (this->hasBorder == 0) {
+					this->hasBorder = 1; // complete black is set to 1
+				}
+			}
 		} else {
 			LuaError(l, "'%s' invalid for method 'LifeBar' in DefinePanelContents" _C_ key);
 		}

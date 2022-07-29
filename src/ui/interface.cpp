@@ -59,25 +59,21 @@
 --  Defines
 ----------------------------------------------------------------------------*/
 
-/// Scrolling area (<= 15 y)
-#define SCROLL_UP     15
-/// Scrolling area (>= VideoHeight - 16 y)
-#define SCROLL_DOWN   (Video.Height - 16)
-/// Scrolling area (<= 15 y)
-#define SCROLL_LEFT   15
-/// Scrolling area (>= VideoWidth - 16 x)
-#define SCROLL_RIGHT  (Video.Width - 16)
-
 /*----------------------------------------------------------------------------
 --  Variables
 ----------------------------------------------------------------------------*/
+
+int ScrollMarginTop = 15;
+int ScrollMarginBottom = 16;
+int ScrollMarginLeft = 15;
+int ScrollMarginRight = 16;
 
 const char Cursor[] = "~!_";         /// Input cursor
 static Vec2i SavedMapPosition[3];    /// Saved map position
 static char Input[80];               /// line input for messages/long commands
 static int InputIndex;               /// current index into input
 static char InputStatusLine[99];     /// Last input status line
-const int MaxInputHistorySize = 16;  /// Max history of inputs
+constexpr int MaxInputHistorySize = 16;  /// Max history of inputs
 static char InputHistory[MaxInputHistorySize * sizeof(Input)] = { '\0' }; /// History of inputs
 static int InputHistoryIdx = 0;      /// Next history idx
 static int InputHistoryPos = 0;      /// Current position in history
@@ -449,18 +445,18 @@ void UiToggleTerrain()
 */
 void UiFindIdleWorker()
 {
-	if (ThisPlayer->FreeWorkers.empty()) {
+	if (ThisPlayer->GetFreeWorkersCount() == 0) {
 		return;
 	}
-	CUnit *unit = ThisPlayer->FreeWorkers[0];
+	CUnit *unit = ThisPlayer->GetFreeWorker(0);
 	if (LastIdleWorker) {
-		const std::vector<CUnit *> &freeWorkers = ThisPlayer->FreeWorkers;
-		std::vector<CUnit *>::const_iterator it = std::find(freeWorkers.begin(),
-															freeWorkers.end(),
-															LastIdleWorker);
-		if (it != ThisPlayer->FreeWorkers.end()) {
-			if (*it != ThisPlayer->FreeWorkers.back()) {
-				unit = *(++it);
+		bool found = false;
+		for(auto it = ThisPlayer->FreeWorkersBegin(); it != ThisPlayer->FreeWorkersEnd(); ++it) {
+			if (found) {
+				unit = *it;
+				break;
+			} else if (*it == unit) {
+				found = true;
 			}
 		}
 	}
@@ -782,7 +778,7 @@ int HandleCheats(const std::string &input)
 #endif
 		} else {
 			ThisPlayer->AiEnabled = true;
-			ThisPlayer->Type = PlayerComputer;
+			ThisPlayer->Type = PlayerTypes::PlayerComputer;
 			if (!ThisPlayer->Ai) {
 				AiInit(*ThisPlayer);
 			}
@@ -851,7 +847,7 @@ static void InputKey(int key)
 			removeCursorFromInput();		
 			// save to history
 			strncpy(InputHistory + (InputHistoryIdx * sizeof(Input)), Input, sizeof(Input));
-			if (InputHistorySize < MaxInputHistorySize) {
+			if (InputHistorySize < MaxInputHistorySize - 1) {
 				InputHistorySize++;
 				InputHistoryIdx = InputHistorySize;
 			} else {
@@ -870,7 +866,7 @@ static void InputKey(int key)
 			} else
 #endif
 				if (!IsNetworkGame()) {
-					if (!GameObserve && !GamePaused && !GameEstablishing) {
+					if (!GameObserve && !GameEstablishing) {
 						if (HandleCheats(Input)) {
 							CommandLog("input", NoUnitP, FlushCommands, -1, -1, NoUnitP, Input, -1);
 						}
@@ -927,6 +923,9 @@ static void InputKey(int key)
 		case SDLK_UP:
 			removeCursorFromInput();
 			strncpy(InputHistory + (InputHistoryPos * sizeof(Input)), Input, sizeof(Input));
+			if (InputHistorySize == 0) {
+				break;
+			}
 			InputHistoryPos = ((InputHistoryPos - 1) % InputHistorySize + InputHistorySize) % InputHistorySize;
 			strncpy(Input, InputHistory + (InputHistoryPos * sizeof(Input)), sizeof(Input));
 			InputIndex = strlen(Input);
@@ -937,6 +936,9 @@ static void InputKey(int key)
 		case SDLK_DOWN:
 			removeCursorFromInput();
 			strncpy(InputHistory + (InputHistoryPos * sizeof(Input)), Input, sizeof(Input));
+			if (InputHistorySize == 0) {
+				break;
+			}
 			InputHistoryPos = ((InputHistoryPos + 1) % InputHistorySize + InputHistorySize) % InputHistorySize;
 			strncpy(Input, InputHistory + (InputHistoryPos * sizeof(Input)), sizeof(Input));
 			InputIndex = strlen(Input);
@@ -971,7 +973,7 @@ static void InputKey(int key)
 			}
 			if (strlen(namestart)) {
 				for (int i = 0; i < PlayerMax; ++i) {
-					if (Players[i].Type != PlayerPerson) {
+					if (Players[i].Type != PlayerTypes::PlayerPerson) {
 						continue;
 					}
 					if (!strncasecmp(namestart, Players[i].Name.c_str(), strlen(namestart))) {
@@ -1235,12 +1237,12 @@ void HandleKeyRepeat(unsigned, unsigned keychar)
 */
 bool HandleMouseScrollArea(const PixelPos &mousePos)
 {
-	if (mousePos.x < SCROLL_LEFT) {
-		if (mousePos.y < SCROLL_UP) {
+	if (mousePos.x < ScrollMarginLeft) {
+		if (mousePos.y < ScrollMarginTop) {
 			CursorOn = CursorOnScrollLeftUp;
 			MouseScrollState = ScrollLeftUp;
 			GameCursor = UI.ArrowNW.Cursor;
-		} else if (mousePos.y > SCROLL_DOWN) {
+		} else if (mousePos.y > (Video.Height - ScrollMarginBottom)) {
 			CursorOn = CursorOnScrollLeftDown;
 			MouseScrollState = ScrollLeftDown;
 			GameCursor = UI.ArrowSW.Cursor;
@@ -1249,12 +1251,12 @@ bool HandleMouseScrollArea(const PixelPos &mousePos)
 			MouseScrollState = ScrollLeft;
 			GameCursor = UI.ArrowW.Cursor;
 		}
-	} else if (mousePos.x > SCROLL_RIGHT) {
-		if (mousePos.y < SCROLL_UP) {
+	} else if (mousePos.x > (Video.Width - ScrollMarginRight)) {
+		if (mousePos.y < ScrollMarginTop) {
 			CursorOn = CursorOnScrollRightUp;
 			MouseScrollState = ScrollRightUp;
 			GameCursor = UI.ArrowNE.Cursor;
-		} else if (mousePos.y > SCROLL_DOWN) {
+		} else if (mousePos.y > (Video.Height - ScrollMarginBottom)) {
 			CursorOn = CursorOnScrollRightDown;
 			MouseScrollState = ScrollRightDown;
 			GameCursor = UI.ArrowSE.Cursor;
@@ -1264,11 +1266,11 @@ bool HandleMouseScrollArea(const PixelPos &mousePos)
 			GameCursor = UI.ArrowE.Cursor;
 		}
 	} else {
-		if (mousePos.y < SCROLL_UP) {
+		if (mousePos.y < ScrollMarginTop) {
 			CursorOn = CursorOnScrollUp;
 			MouseScrollState = ScrollUp;
 			GameCursor = UI.ArrowN.Cursor;
-		} else if (mousePos.y > SCROLL_DOWN) {
+		} else if (mousePos.y > (Video.Height - ScrollMarginBottom)) {
 			CursorOn = CursorOnScrollDown;
 			MouseScrollState = ScrollDown;
 			GameCursor = UI.ArrowS.Cursor;
@@ -1376,7 +1378,9 @@ void InputMouseButtonPress(const EventCallback &callbacks,
 	}
 	LastMouseTicks = ticks;
 
-	callbacks.ButtonPressed(button);
+	if (callbacks.ButtonPressed) {
+		callbacks.ButtonPressed(button);
+	}
 }
 
 /**
@@ -1410,7 +1414,9 @@ void InputMouseButtonRelease(const EventCallback &callbacks,
 	}
 	MouseButtons &= ~(0x01010101 << button);
 
-	callbacks.ButtonReleased(button | mask);
+	if (callbacks.ButtonReleased) {
+		callbacks.ButtonReleased(button | mask);
+	}
 }
 
 /**
@@ -1431,7 +1437,9 @@ void InputMouseMove(const EventCallback &callbacks,
 		LastMouseTicks = ticks;
 		LastMousePos = mousePos;
 	}
-	callbacks.MouseMoved(mousePos);
+	if (callbacks.MouseMoved) {
+		callbacks.MouseMoved(mousePos);
+	}
 }
 
 /**
@@ -1444,7 +1452,9 @@ void InputMouseExit(const EventCallback &callbacks, unsigned /* ticks */)
 {
 	// FIXME: should we do anything here with ticks? don't know, but conform others
 	// JOHNS: called by callback HandleMouseExit();
-	callbacks.MouseExit();
+	if (callbacks.MouseExit) {
+		callbacks.MouseExit();
+	}
 }
 
 /**
@@ -1462,7 +1472,9 @@ void InputMouseTimeout(const EventCallback &callbacks, unsigned ticks)
 		if (ticks > LastMouseTicks + HoldClickDelay) {
 			LastMouseTicks = ticks;
 			MouseButtons |= (1 << LastMouseButton) << MouseHoldShift;
-			callbacks.ButtonPressed(LastMouseButton | (LastMouseButton << MouseHoldShift));
+			if (callbacks.ButtonPressed) {
+				callbacks.ButtonPressed(LastMouseButton | (LastMouseButton << MouseHoldShift));
+			}
 		}
 	}
 }
@@ -1494,7 +1506,9 @@ void InputKeyButtonPress(const EventCallback &callbacks,
 	LastIKey = ikey;
 	LastIKeyChar = ikeychar;
 	LastKeyTicks = ticks;
-	callbacks.KeyPressed(ikey, ikeychar);
+	if (callbacks.KeyPressed) {
+		callbacks.KeyPressed(ikey, ikeychar);
+	}
 	KeyModifiers &= ~ModifierDoublePress;
 }
 
@@ -1513,7 +1527,9 @@ void InputKeyButtonRelease(const EventCallback &callbacks,
 		LastIKey = 0;
 	}
 	LastKeyTicks = ticks;
-	callbacks.KeyReleased(ikey, ikeychar);
+	if (callbacks.KeyReleased) {
+		callbacks.KeyReleased(ikey, ikeychar);
+	}
 }
 
 /**
@@ -1526,7 +1542,9 @@ void InputKeyTimeout(const EventCallback &callbacks, unsigned ticks)
 {
 	if (LastIKey && ticks > LastKeyTicks + HoldKeyDelay) {
 		LastKeyTicks = ticks - (HoldKeyDelay - HoldKeyAdditionalDelay);
-		callbacks.KeyRepeated(LastIKey, LastIKeyChar);
+		if (callbacks.KeyRepeated) {
+			callbacks.KeyRepeated(LastIKey, LastIKeyChar);
+		}
 	}
 }
 
@@ -1564,6 +1582,17 @@ int GetHoldClickDelay()
 void SetHoldClickDelay(int delay)
 {
 	HoldClickDelay = delay;
+}
+
+/**
+ * Configure margins (in pixels) on screen where map scrolling starts.
+ */
+void SetScrollMargins(unsigned int top, unsigned int right, unsigned int bottom, unsigned int left)
+{
+	ScrollMarginTop = top;
+	ScrollMarginBottom = bottom + 1;
+	ScrollMarginLeft = left;
+	ScrollMarginRight = right + 1;
 }
 
 //@}

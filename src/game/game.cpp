@@ -114,25 +114,15 @@ static std::vector<gcn::Container *> Containers;
 */
 void SaveGameSettings(CFile &file)
 {
-	file.printf("\nGameSettings.NetGameType = %d\n", GameSettings.NetGameType);
-	for (int i = 0; i < PlayerMax - 1; ++i) {
-		file.printf("GameSettings.Presets[%d].PlayerColor = %d\n", i, GameSettings.Presets[i].PlayerColor);
-		file.printf("GameSettings.Presets[%d].AIScript = \"%s\"\n", i, GameSettings.Presets[i].AIScript.c_str());
-		file.printf("GameSettings.Presets[%d].Race = %d\n", i, GameSettings.Presets[i].Race);
-		file.printf("GameSettings.Presets[%d].Team = %d\n", i, GameSettings.Presets[i].Team);
-		file.printf("GameSettings.Presets[%d].Type = %d\n", i, GameSettings.Presets[i].Type);
-	}
-	file.printf("GameSettings.Resources = %d\n", GameSettings.Resources);
-	file.printf("GameSettings.Difficulty = %d\n", GameSettings.Difficulty);
-	file.printf("GameSettings.NumUnits = %d\n", GameSettings.NumUnits);
-	file.printf("GameSettings.Opponents = %d\n", GameSettings.Opponents);
-	file.printf("GameSettings.GameType = %d\n", GameSettings.GameType);
-	file.printf("GameSettings.NoFogOfWar = %s\n", GameSettings.NoFogOfWar ? "true" : "false");
-	file.printf("GameSettings.RevealMap = %d\n", GameSettings.RevealMap);
-	file.printf("GameSettings.MapRichness = %d\n", GameSettings.MapRichness);
-	file.printf("GameSettings.Inside = %s\n", GameSettings.Inside ? "true" : "false");
+	file.printf("\n");
+	GameSettings.Save([&](std::string field) {
+		file.printf("GameSettings.%s\n", field.c_str());
+	});
 	file.printf("\n");
 }
+
+/// forward declaration
+void CreateGame(const std::string &filename, CMap *map);
 
 void StartMap(const std::string &filename, bool clean)
 {
@@ -278,7 +268,7 @@ static void WriteMapPreview(const char *mapname, CMap &map)
 
 	SDL_Rect rect;
 	for (int i = 0; i < PlayerMax - 1; ++i) {
-		if (Players[i].Type != PlayerNobody) {
+		if (Players[i].Type != PlayerTypes::PlayerNobody) {
 			rect.x = Players[i].StartPos.x * UI.Minimap.W / map.Info.MapWidth - rectSize / 2;
 			rect.y = Players[i].StartPos.y * UI.Minimap.H / map.Info.MapHeight - rectSize / 2;
 			rect.w = rect.h = rectSize;
@@ -291,15 +281,21 @@ static void WriteMapPreview(const char *mapname, CMap &map)
 	SDL_FreeSurface(preview);
 }
 
+std::string PlayerTypeNames[static_cast<int>(PlayerTypes::PlayerRescueActive) + 1] = {
+	"",
+	"",
+	"neutral",
+	"nobody",
+	"computer",
+	"person",
+	"rescue-passive",
+	"rescue-active"
+};
 
 // Write the map presentation file
 static int WriteMapPresentation(const std::string &mapname, CMap &map, Vec2i newSize)
 {
 	FileWriter *f = NULL;
-
-	const char *type[] = {"", "", "neutral", "nobody",
-						  "computer", "person", "rescue-passive", "rescue-active"
-						 };
 
 	int numplayers = 0;
 	int topplayer = PlayerMax - 2;
@@ -312,12 +308,12 @@ static int WriteMapPresentation(const std::string &mapname, CMap &map, Vec2i new
 		f->printf("-- File licensed under the GNU GPL version 2.\n\n");
 
 		f->printf("DefinePlayerTypes(");
-		while (topplayer > 0 && map.Info.PlayerType[topplayer] == PlayerNobody) {
+		while (topplayer > 0 && map.Info.PlayerType[topplayer] == PlayerTypes::PlayerNobody) {
 			--topplayer;
 		}
 		for (int i = 0; i <= topplayer; ++i) {
-			f->printf("%s\"%s\"", (i ? ", " : ""), type[map.Info.PlayerType[i]]);
-			if (map.Info.PlayerType[i] == PlayerPerson) {
+			f->printf("%s\"%s\"", (i ? ", " : ""), PlayerTypeNames[static_cast<int>(map.Info.PlayerType[i])].c_str());
+			if (map.Info.PlayerType[i] == PlayerTypes::PlayerPerson) {
 				++numplayers;
 			}
 		}
@@ -365,9 +361,17 @@ int WriteMapSetup(const char *mapSetup, CMap &map, int writeTerrain, Vec2i newSi
 		// MAPTODO Copyright notice in generated file
 		f->printf("-- File licensed under the GNU GPL version 2.\n\n");
 
+		f->printf("-- preamble\n");
+		f->printf("if CanAccessFile(__file__ .. \".preamble\") then Load(__file__ .. \".preamble\", Editor.Running == 0) end\n\n");
+		if (!Map.Info.Preamble.empty()) {
+			FileWriter *preamble = CreateFileWriter(std::string(mapSetup) + ".preamble");
+			preamble->write(Map.Info.Preamble.c_str(), Map.Info.Preamble.size());
+			delete preamble;
+		}
+
 		f->printf("-- player configuration\n");
 		for (int i = 0; i < PlayerMax; ++i) {
-			if (Map.Info.PlayerType[i] == PlayerNobody) {
+			if (Map.Info.PlayerType[i] == PlayerTypes::PlayerNobody) {
 				continue;
 			}
 			f->printf("SetStartView(%d, %d, %d)\n", i, Players[i].StartPos.x, Players[i].StartPos.y);
@@ -398,8 +402,8 @@ int WriteMapSetup(const char *mapSetup, CMap &map, int writeTerrain, Vec2i newSi
 				f->printf("    end\n");
 				f->printf("end\n");
 			} else {
-				newSize.x = map.Info.MapHeight;
-				newSize.y = map.Info.MapWidth;
+				newSize.x = map.Info.MapWidth;
+				newSize.y = map.Info.MapHeight;
 			}
 
 			f->printf("-- Tiles Map\n");
@@ -419,8 +423,8 @@ int WriteMapSetup(const char *mapSetup, CMap &map, int writeTerrain, Vec2i newSi
 		}
 
 		if (newSize.x == 0 || newSize.y == 0) {
-			newSize.x = map.Info.MapHeight;
-			newSize.y = map.Info.MapWidth;
+			newSize.x = map.Info.MapWidth;
+			newSize.y = map.Info.MapHeight;
 		}
 
 		f->printf("\n-- set map default stat and map sound for unit types\n");
@@ -485,7 +489,7 @@ int WriteMapSetup(const char *mapSetup, CMap &map, int writeTerrain, Vec2i newSi
 		f->printf("\n-- place units\n");
 		f->printf("if (MapUnitsInit ~= nil) then MapUnitsInit() end\n");
 		std::vector<CUnit *> teleporters;
-		for (CUnitManager::Iterator it = UnitManager.begin(); it != UnitManager.end(); ++it) {
+		for (CUnitManager::Iterator it = UnitManager->begin(); it != UnitManager->end(); ++it) {
 			const CUnit &unit = **it;
 			const int x = unit.tilePos.x + offset.x;
 			const int y = unit.tilePos.y + offset.y;
@@ -511,6 +515,15 @@ int WriteMapSetup(const char *mapSetup, CMap &map, int writeTerrain, Vec2i newSi
 			f->printf("SetTeleportDestination(%d, %d)\n", UnitNumber(unit), UnitNumber(*unit.Goal));
 		}
 		f->printf("\n\n");
+
+		f->printf("-- postamble\n");
+		f->printf("if CanAccessFile(__file__ .. \".postamble\") then Load(__file__ .. \".postamble\", Editor.Running == 0) end\n\n");
+		if (!Map.Info.Postamble.empty()) {
+			FileWriter *postamble = CreateFileWriter(std::string(mapSetup) + ".postamble");
+			postamble->write(Map.Info.Postamble.c_str(), Map.Info.Postamble.size());
+			delete postamble;
+		}
+
 	} catch (const FileException &) {
 		fprintf(stderr, "Can't save map setup : '%s' \n", mapSetup);
 		delete f;
@@ -723,11 +736,11 @@ static void GameTypeLeftVsRight()
 static void GameTypeManVsMachine()
 {
 	for (int i = 0; i < PlayerMax - 1; ++i) {
-		if (Players[i].Type != PlayerPerson && Players[i].Type != PlayerComputer) {
+		if (Players[i].Type != PlayerTypes::PlayerPerson && Players[i].Type != PlayerTypes::PlayerComputer) {
 			continue;
 		}
 		for (int j = i + 1; j < PlayerMax - 1; ++j) {
-			if (Players[j].Type != PlayerPerson && Players[j].Type != PlayerComputer) {
+			if (Players[j].Type != PlayerTypes::PlayerPerson && Players[j].Type != PlayerTypes::PlayerComputer) {
 				continue;
 			}
 			if (Players[i].Type == Players[j].Type) {
@@ -749,7 +762,7 @@ static void GameTypeManVsMachine()
 static void GameTypeManTeamVsMachine()
 {
 	for (int i = 0; i < PlayerMax - 1; ++i) {
-		if (Players[i].Type != PlayerPerson && Players[i].Type != PlayerComputer) {
+		if (Players[i].Type != PlayerTypes::PlayerPerson && Players[i].Type != PlayerTypes::PlayerComputer) {
 			continue;
 		}
 		for (int j = 0; j < PlayerMax - 1; ++j) {
@@ -762,7 +775,7 @@ static void GameTypeManTeamVsMachine()
 				}
 			}
 		}
-		if (Players[i].Type == PlayerPerson) {
+		if (Players[i].Type == PlayerTypes::PlayerPerson) {
 			Players[i].Team = 2;
 		} else {
 			Players[i].Team = 1;
@@ -777,9 +790,9 @@ static void GameTypeMachineVsMachine()
 {
 	Map.Reveal();
 	for (int i = 0; i < PlayerMax - 1; ++i) {
-		if (Players[i].Type == PlayerComputer) {
+		if (Players[i].Type == PlayerTypes::PlayerComputer) {
 			for (int j = i + 1; j < PlayerMax - 1; ++j) {
-				if (Players[j].Type == PlayerComputer) {
+				if (Players[j].Type == PlayerTypes::PlayerComputer) {
 					CommandDiplomacy(i, DiplomacyEnemy, j);
 					CommandDiplomacy(j, DiplomacyEnemy, i);
 				} else {
@@ -850,21 +863,27 @@ void CreateGame(const std::string &filename, CMap *map)
 	}
 
 	for (int i = 0; i < PlayerMax; ++i) {
-		int playertype = (PlayerTypes)Map.Info.PlayerType[i];
-		if (GameSettings.Presets[i].Type != SettingsPresetMapDefault) {
+		PlayerTypes playertype = Map.Info.PlayerType[i];
+		if (GameSettings.Presets[i].Type != PlayerTypes::MapDefault) {
 			playertype = GameSettings.Presets[i].Type;
 		}
 		CreatePlayer(playertype);
 		if (GameSettings.Presets[i].Team != SettingsPresetMapDefault) {
-			int presetTeam = GameSettings.Presets[i].Team;
+			// why this calculation? Well. The CreatePlayer function assigns some
+			// default team values, starting from up to PlayerMax + some constant (2 at the time
+			// of this writing). So to not accidentally interfere with those teams, we assign the team
+			// offset by 2 * PlayerMax.
+			Players[i].Team = GameSettings.Presets[i].Team + 2 * PlayerMax;
 			for (int j = 0; j < i; j++) {
-				if (Players[j].Team != SettingsPresetMapDefault) {
-					if (Players[j].Team != presetTeam) {
+				if (GameSettings.Presets[j].Team != SettingsPresetMapDefault) {
+					if (GameSettings.Presets[j].Team != GameSettings.Presets[i].Team) {
 						Players[i].SetDiplomacyEnemyWith(Players[j]);
 						Players[j].SetDiplomacyEnemyWith(Players[i]);
 					} else {
 						Players[i].SetDiplomacyAlliedWith(Players[j]);
 						Players[j].SetDiplomacyAlliedWith(Players[i]);
+						Players[i].ShareVisionWith(Players[j]);
+						Players[j].ShareVisionWith(Players[i]);
 					}
 				}
 			}
@@ -873,7 +892,7 @@ void CreateGame(const std::string &filename, CMap *map)
 	if (!ThisPlayer && !IsNetworkGame()) {
 		// In demo or kiosk mode, pick first empty slot
 		for (int i = 0; i < PlayerMax; ++i) {
-			if (Players[i].Type == PlayerNobody) {
+			if (Players[i].Type == PlayerTypes::PlayerNobody) {
 				ThisPlayer = &Players[i];
 				break;
 			}
@@ -899,15 +918,7 @@ void CreateGame(const std::string &filename, CMap *map)
 	SyncHash = 0;
 	InitSyncRand();
 
-	if (IsNetworkGame()) { // Prepare network play
-		NetworkOnStartGame();
-	} else {
-		const std::string &localPlayerName = Parameters::Instance.LocalPlayerName;
-
-		if (!localPlayerName.empty() && localPlayerName != "Anonymous") {
-			ThisPlayer->SetName(localPlayerName);
-		}
-	}
+	NetworkOnStartGame();
 
 	CallbackMusicOn();
 
@@ -915,7 +926,7 @@ void CreateGame(const std::string &filename, CMap *map)
 	GamePaused = true;
 #endif
 
-	if (FlagRevealMap) {
+	if (FlagRevealMap != MapRevealModes::cHidden) {
 		Map.Reveal(FlagRevealMap);
 	}
 
@@ -923,49 +934,51 @@ void CreateGame(const std::string &filename, CMap *map)
 	// Setup game types
 	//
 	// FIXME: implement more game types
-	if (GameSettings.GameType != SettingsGameTypeMapDefault) {
+	if (GameSettings.GameType != GameTypes::SettingsGameTypeMapDefault) {
 		switch (GameSettings.GameType) {
-			case SettingsGameTypeMelee:
+			case GameTypes::SettingsGameTypeMelee:
 				break;
-			case SettingsGameTypeFreeForAll:
+			case GameTypes::SettingsGameTypeFreeForAll:
 				GameTypeFreeForAll();
 				break;
-			case SettingsGameTypeTopVsBottom:
+			case GameTypes::SettingsGameTypeTopVsBottom:
 				GameTypeTopVsBottom();
 				break;
-			case SettingsGameTypeLeftVsRight:
+			case GameTypes::SettingsGameTypeLeftVsRight:
 				GameTypeLeftVsRight();
 				break;
-			case SettingsGameTypeManVsMachine:
+			case GameTypes::SettingsGameTypeManVsMachine:
 				GameTypeManVsMachine();
 				break;
-			case SettingsGameTypeManTeamVsMachine:
+			case GameTypes::SettingsGameTypeManTeamVsMachine:
 				GameTypeManTeamVsMachine();
 				break;
-			case SettingsGameTypeMachineVsMachine:
+			case GameTypes::SettingsGameTypeMachineVsMachine:
 				GameTypeMachineVsMachine();
 				break;
-			case SettingsGameTypeMachineVsMachineTraining:
+			case GameTypes::SettingsGameTypeMachineVsMachineTraining:
 				GameTypeMachineVsMachineTraining();
 				break;
 
 				// Future game type ideas
 #if 0
-			case SettingsGameTypeOneOnOne:
+			case GameTypes::SettingsGameTypeOneOnOne:
 				break;
-			case SettingsGameTypeCaptureTheFlag:
+			case GameTypes::SettingsGameTypeCaptureTheFlag:
 				break;
-			case SettingsGameTypeGreed:
+			case GameTypes::SettingsGameTypeGreed:
 				break;
-			case SettingsGameTypeSlaughter:
+			case GameTypes::SettingsGameTypeSlaughter:
 				break;
-			case SettingsGameTypeSuddenDeath:
+			case GameTypes::SettingsGameTypeSuddenDeath:
 				break;
-			case SettingsGameTypeTeamMelee:
+			case GameTypes::SettingsGameTypeTeamMelee:
 				break;
-			case SettingsGameTypeTeamCaptureTheFlag:
+			case GameTypes::SettingsGameTypeTeamCaptureTheFlag:
 				break;
 #endif
+            default:
+				break;
 		}
 	}
 
@@ -1052,14 +1065,8 @@ void CreateGame(const std::string &filename, CMap *map)
 	// FIXME: The palette is loaded after the units are created.
 	// FIXME: This loops fixes the colors of the units.
 	//
-	for (CUnitManager::Iterator it = UnitManager.begin(); it != UnitManager.end(); ++it) {
+	for (CUnitManager::Iterator it = UnitManager->begin(); it != UnitManager->end(); ++it) {
 		CUnit &unit = **it;
-		// I don't really think that there can be any rescued units at this point.
-		if (unit.RescuedFrom) {
-			unit.Colors = &unit.RescuedFrom->UnitColors;
-		} else {
-			unit.Colors = &unit.Player->UnitColors;
-		}
 		if (unit.Type->OnReady) {
 			unit.Type->OnReady->pushPreamble();
 			unit.Type->OnReady->pushInteger(UnitNumber(unit));
@@ -1080,20 +1087,8 @@ void CreateGame(const std::string &filename, CMap *map)
 */
 void InitSettings()
 {
-	for (int i = 0; i < PlayerMax; ++i) {
-		GameSettings.Presets[i].PlayerColor = i;
-		GameSettings.Presets[i].AIScript = "ai-passive";
-		GameSettings.Presets[i].Race = SettingsPresetMapDefault;
-		GameSettings.Presets[i].Team = SettingsPresetMapDefault;
-		GameSettings.Presets[i].Type = SettingsPresetMapDefault;
-	}
-	GameSettings.Resources = SettingsPresetMapDefault;
-	GameSettings.NumUnits = SettingsPresetMapDefault;
-	GameSettings.Opponents = SettingsPresetMapDefault;
-	GameSettings.Difficulty = SettingsPresetMapDefault;
-	GameSettings.GameType = SettingsPresetMapDefault;
-	GameSettings.MapRichness = SettingsPresetMapDefault;
-	GameSettings.NetGameType = SettingsSinglePlayerGame;
+	GameSettings.Init();
+	Preference.InitializeSettingsFromPreferences(GameSettings);
 }
 
 // call the lua function: CleanGame_Lua.

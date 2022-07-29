@@ -34,9 +34,6 @@
 --  Includes
 ----------------------------------------------------------------------------*/
 #include <queue>
-#ifdef OPENMP_ENABLED
-#include <omp.h>
-#endif
 
 #include "stratagus.h"
 
@@ -53,6 +50,13 @@
 #include "video.h"
 #include "../video/intern_video.h"
 
+#ifdef USE_STACKTRACE
+#include <stdexcept>
+#include <stacktrace/call_stack.hpp>
+#include <stacktrace/stack_exception.hpp>
+#else
+#include "st_backtrace.h"
+#endif
 
 /*----------------------------------------------------------------------------
 --  Variables
@@ -207,6 +211,7 @@ void MapMarkTileSight(const CPlayer &player, const unsigned int index)
 {
 	CMapField &mf = *Map.Field(index);
 	unsigned short *v = &(mf.playerInfo.Visible[player.Index]);
+
 	if (*v == 0 || *v == 1) { // Unexplored or unseen
 		// When there is no fog only unexplored tiles are marked.
 		if (!Map.NoFogOfWar || *v == 0) {
@@ -216,10 +221,25 @@ void MapMarkTileSight(const CPlayer &player, const unsigned int index)
 		if (mf.playerInfo.IsTeamVisible(*ThisPlayer)) {
 			Map.MarkSeenTile(mf);
 		}
-		return;
+	} else {
+		Assert(*v != 65535);
+		++*v;
 	}
-	Assert(*v != 65535);
-	++*v;
+#if 0
+	if (EnableDebugPrint) {
+		fprintf(stderr, "Mapsight: GameCycle: %lud, SyncHash before: %x", GameCycle, SyncHash);
+	}
+	// Calculate some hash.
+	SyncHash = (SyncHash << 5) | (SyncHash >> 27);
+	SyncHash ^= (*v << 16) | *v;
+
+	if (EnableDebugPrint) {
+		fprintf(stderr, ", after: %x (mapfield: %d, player: %d, sight: %d)\n", SyncHash,
+							index, player.Index, *v);
+		print_backtrace(8);
+		fflush(stderr);
+	}
+#endif
 }
 
 void MapMarkTileSight(const CPlayer &player, const Vec2i &pos)
@@ -346,7 +366,7 @@ void UpdateFogOfWarChange()
 		}
 	}
 	//  Global seen recount.
-	for (CUnitManager::Iterator it = UnitManager.begin(); it != UnitManager.end(); ++it) {
+	for (CUnitManager::Iterator it = UnitManager->begin(); it != UnitManager->end(); ++it) {
 		CUnit &unit = **it;
 		UnitCountSeen(unit);
 	}
@@ -372,11 +392,11 @@ void CViewport::DrawMapFogOfWar()
 		this->AdjustFogSurface();
 	}
 
-	FogOfWar.Draw(*this);
+	FogOfWar->Draw(*this);
 	
 	/// TODO: switch to hardware rendering
 	const bool isSoftwareRender {true}; // FIXME: remove this
-	if (isSoftwareRender && FogOfWar.GetType() != FogOfWarTypes::cTiledLegacy) {
+	if (isSoftwareRender && FogOfWar->GetType() != FogOfWarTypes::cTiledLegacy) {
 		SDL_Rect screenRect;
 		screenRect.x = this->TopLeftPos.x;
 		screenRect.y = this->TopLeftPos.y;
@@ -415,7 +435,7 @@ void CViewport::AdjustFogSurface()
                                                      	   32, RMASK, GMASK, BMASK, AMASK);
     SDL_SetSurfaceBlendMode(this->FogSurface, SDL_BLENDMODE_NONE);
 	
-	const uint32_t fogColorSolid = FogOfWar.GetFogColorSDL() | (uint32_t(0xFF) << ASHIFT);
+	const uint32_t fogColorSolid = FogOfWar->GetFogColorSDL() | (uint32_t(0xFF) << ASHIFT);
 	SDL_FillRect(this->FogSurface, NULL, fogColorSolid);
 }
 

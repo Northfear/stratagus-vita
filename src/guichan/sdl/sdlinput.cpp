@@ -61,6 +61,14 @@
 
 extern uint32_t SDL_CUSTOM_KEY_UP;
 
+// Ugh... This entire file is so redundant with sdl.cpp - but I don't feel like refactoring the entire guichan mess...
+// So... more mess!!
+static char ControlIsDown = 0;
+
+static bool isTextInput(int key) {
+	return key >= 32 && key < 128 && !ControlIsDown;
+}
+
 namespace gcn
 {
     SDLInput::SDLInput()
@@ -160,7 +168,7 @@ namespace gcn
                         ++pos;
                     }
 #else
-                  if ((uint8_t)text[0] >= 32 || (uint8_t)text[0] < 128) {
+                  if (isTextInput((uint8_t)text[0])) {
                       mLastKey = text[0];
                       mIsRepeating = true;
                       keyInput.setKey(mLastKey);
@@ -171,16 +179,15 @@ namespace gcn
               }
               break;
 
-          case SDL_USEREVENT:
-              if (reinterpret_cast<uintptr_t>(event.user.data1) == SDL_CUSTOM_KEY_UP) {
-                  mIsRepeating = false;
-                  keyInput.setKey(static_cast<char>(event.user.code));
-                  keyInput.setType(KeyInput::RELEASE);
-                  mKeyInputQueue.push(keyInput);
-              }
-
           case SDL_KEYDOWN:
-              if (event.key.keysym.sym < 32 || event.key.keysym.sym >= 128) {
+              if (!isTextInput(event.key.keysym.sym)) {
+                  switch (event.key.keysym.sym) {
+                      case SDLK_LCTRL:
+                        ControlIsDown |= 0b01;
+                        break;
+                      case SDLK_RCTRL:
+                        ControlIsDown |= 0b10;
+                  }
                   mLastKey = convertKeyCharacter(event.key.keysym);
                   mIsRepeating = true;
                   keyInput.setKey(mLastKey);
@@ -190,7 +197,14 @@ namespace gcn
               break;
 
           case SDL_KEYUP:
-              if (event.key.keysym.sym < 32 || event.key.keysym.sym >= 128) {
+              if (!isTextInput(event.key.keysym.sym)) {
+                  switch (event.key.keysym.sym) {
+                      case SDLK_LCTRL:
+                        ControlIsDown &= 0b10;
+                        break;
+                      case SDLK_RCTRL:
+                        ControlIsDown &= 0b01;
+                  }
                   mIsRepeating = false;
                   keyInput.setKey(convertKeyCharacter(event.key.keysym));
                   keyInput.setType(KeyInput::RELEASE);
@@ -265,6 +279,15 @@ namespace gcn
                   case SDL_WINDOWEVENT_ENTER:
                       mMouseInWindow = true;
                       break;
+              }
+              break;
+
+            default:
+              if (event.type == SDL_CUSTOM_KEY_UP) {
+                  mIsRepeating = false;
+                  keyInput.setKey(static_cast<char>(event.user.code));
+                  keyInput.setType(KeyInput::RELEASE);
+                  mKeyInputQueue.push(keyInput);
               }
               break;
 

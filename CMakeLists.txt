@@ -32,9 +32,9 @@
 # Stratagus major version
 set(STRATAGUS_MAJOR_VERSION 3)
 # Stratagus minor version (maximum 99)
-set(STRATAGUS_MINOR_VERSION 1)
+set(STRATAGUS_MINOR_VERSION 3)
 # Stratagus patch level (maximum 99)
-set(STRATAGUS_PATCH_LEVEL 3)
+set(STRATAGUS_PATCH_LEVEL 0)
 # Stratagus patch level 2
 set(STRATAGUS_PATCH_LEVEL2 0)
 #########################
@@ -125,6 +125,7 @@ set(animation_SRCS
 	src/animation/animation_spawnunit.cpp
 	src/animation/animation_unbreakable.cpp
 	src/animation/animation_wait.cpp
+	src/animation/animation_wiggle.cpp
 )
 source_group(animation FILES ${animation_SRCS})
 
@@ -512,6 +513,7 @@ set(stratagus_animation_HDRS
 	src/include/animation/animation_spawnunit.h
 	src/include/animation/animation_unbreakable.h
 	src/include/animation/animation_wait.h
+	src/include/animation/animation_wiggle.h
 )
 
 set(stratagus_spell_HDRS
@@ -660,7 +662,39 @@ if(VITA)
 endif()
 
 if(APPLE)
-list(APPEND CMAKE_PREFIX_PATH /opt/homebrew/)
+	list(APPEND CMAKE_PREFIX_PATH /opt/homebrew/)
+endif()
+
+if(NOT WIN32 OR NOT MSVC)
+	include(CheckCXXSourceCompiles)
+	set(FS_SRC "
+	#include <experimental/filesystem> 
+	namespace fs = std::experimental::filesystem;
+	int main(int argc, char **argv) {
+		fs::path p = fs::path(\".\");
+		if (fs::absolute(p).is_absolute()) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+	")
+	check_cxx_source_compiles("${FS_SRC}" HAS_17_FS)
+	if(NOT HAS_17_FS)
+		set(CMAKE_REQUIRED_LIBRARIES stdc++fs)
+		check_cxx_source_compiles("${FS_SRC}" HAS_EXP_17_FS_WITH_STDC)
+		if(HAS_EXP_17_FS_WITH_STDC)
+			set(stratagus_LIBS ${stratagus_LIBS} stdc++fs)
+		else()
+			set(CMAKE_REQUIRED_LIBRARIES c++fs)
+			check_cxx_source_compiles("${FS_SRC}" HAS_EXP_17_FS_WITH_CLIB)
+			if(HAS_EXP_17_FS_WITH_CLIB)
+				set(stratagus_LIBS ${stratagus_LIBS} c++fs)
+			else()
+				message(FATAL_ERROR "I don't know how to compile with C++17 filesystem support on your system")
+			endif()
+		endif()
+	endif()
 endif()
 
 include(ExternalProject)
@@ -672,12 +706,21 @@ if(BUILD_VENDORED_LUA)
   )
 
   set(Lua51_FOUND true)
-  set(LUA_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/liblua51.a")
-  set(LUA_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/")
-  set(TOLUA++_FOUND true)
-  set(TOLUA++_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/third-party/lua-5.1.5/toluapp/include/)
-  set(TOLUA++_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/libtoluapp51.a")
-  set(TOLUA++_APP "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/toluapp")
+  if(MSVC)
+    set(LUA_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/$<CONFIGURATION>/lua51.lib")
+    set(LUA_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/")
+    set(TOLUA++_FOUND true)
+    set(TOLUA++_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/third-party/lua-5.1.5/toluapp/include/)
+    set(TOLUA++_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/$<CONFIGURATION>/toluapp51.lib")
+    set(TOLUA++_APP "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/$<CONFIGURATION>/toluapp.exe")
+  else()
+	set(LUA_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/liblua51.a")
+	set(LUA_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/")
+	set(TOLUA++_FOUND true)
+	set(TOLUA++_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/third-party/lua-5.1.5/toluapp/include/)
+	set(TOLUA++_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/libtoluapp51.a")
+	set(TOLUA++_APP "${CMAKE_CURRENT_BINARY_DIR}/lua/src/Lua51B-build/toluapp")
+  endif(MSVC)
 else()
   find_package(Lua51 REQUIRED)
   find_package(Tolua++ REQUIRED)
@@ -734,11 +777,14 @@ endif()
 
 option(ENABLE_TOUCHSCREEN "Use touchscreen input" OFF)
 
+option(EAGER_LOAD "Load all game data at startup, may avoid stutter during gameplay at the cost of memory" OFF)
+
 option(WITH_BZIP2 "Compile Stratagus with BZip2 compression support" ON)
 option(WITH_MNG "Compile Stratagus with MNG image library" ON)
 option(WITH_OGGVORBIS "Compile Stratagus with OGG/Vorbis sound library" ON)
 option(WITH_THEORA "Compile Stratagus with Theroa video library" ON)
 option(WITH_STACKTRACE "Compile Stratagus with StackTrace library" ON)
+option(WITH_OPENMP "Compile Stratagus with OpenMP for parallel processing" ON)
 
 option(ENABLE_DOC "Generate Stratagus source code documentation with Doxygen" OFF)
 option(ENABLE_DEV "Install Stratagus game development headers files" OFF)
@@ -839,6 +885,8 @@ endif()
 
 if(LINUX)
 	add_definitions(-DUSE_LINUX)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ggdb")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -ggdb")
 endif()
 
 if(BEOS)
@@ -852,10 +900,10 @@ endif()
 
 # Stratagus needs to have char by default signed
 # No idea how to tell this to other compilers
-if(CMAKE_COMPILER_IS_GNUCXX)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char -Werror")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char")
 endif()
-if(CMAKE_COMPILER_IS_GNUC)
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsigned-char")
 endif()
 if(WIN32 AND MSVC)
@@ -871,6 +919,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Profile")
 	endif()
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg -g -ggdb")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg -g -ggdb")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
 endif()
 # TODO: Add support for other compilers
 
@@ -936,6 +985,12 @@ endif()
 
 if(ENABLE_TOUCHSCREEN)
 	add_definitions(-DUSE_TOUCHSCREEN)
+endif()
+
+if(EAGER_LOAD)
+	# nothing
+else()
+	add_definitions(-DDYNAMIC_LOAD)
 endif()
 
 if(ENABLE_MULTIBUILD)
@@ -1034,6 +1089,13 @@ else()
 	message("Touchscreen input: No (Enable by param -DENABLE_TOUCHSCREEN=ON)")
 endif()
 
+if(EAGER_LOAD)
+	message("Eager load: Yes (Disable by param -DEAGER_LOAD=OFF)")
+else()
+	message("Eager load: No (Enable by param -DEAGER_LOAD=ON)")
+endif()
+
+
 if(ENABLE_DOC AND DOXYGEN_FOUND)
 	message("Doxygen documentation: Yes (Disable by param -DENABLE_DOC=OFF)")
 else()
@@ -1065,6 +1127,7 @@ log_package("Mng" "MNG")
 log_package("Ogg/Vorbis" "OGGVORBIS")
 log_package("StackTrace" "STACKTRACE")
 log_package("Theora" "THEORA")
+log_package("OpenMP" "OPENMP")
 
 message("==================================")
 
@@ -1131,7 +1194,7 @@ endif ()
 target_link_libraries(stratagus ${stratagus_LIBS})
 
 if(OpenMP_CXX_FOUND)
-	add_definitions(-DOPENMP_ENABLED)
+	add_definitions(-DUSE_OPENMP)
 	target_compile_options(stratagus PRIVATE ${OpenMP_CXX_FLAGS})
 	target_link_libraries(stratagus OpenMP::OpenMP_CXX)
 endif()
@@ -1150,6 +1213,12 @@ if(WIN32 AND MINGW AND ENABLE_STATIC)
 endif()
 
 if(WIN32)
+  if(MSVC)
+	target_compile_options(stratagus PRIVATE "$<$<CONFIG:Release>:/Zi>")
+	target_link_options(stratagus PRIVATE "$<$<CONFIG:Release>:/DEBUG>")
+	target_link_options(stratagus PRIVATE "$<$<CONFIG:Release>:/OPT:REF>")
+	target_link_options(stratagus PRIVATE "$<$<CONFIG:Release>:/OPT:ICF>")
+  endif()
   set_target_properties(stratagus PROPERTIES LINK_FLAGS "${LINK_FLAGS} -lSDL2main")
   set(CMAKE_EXE_LINKER_FLAGS_PROFILE "${CMAKE_EXE_LINKER_FLAGS}")
 endif()
@@ -1251,10 +1320,19 @@ if(WIN32 AND ENABLE_NSIS AND MAKENSIS_FOUND)
 	add_custom_target(nsis ALL DEPENDS Stratagus-${STRATAGUS_VERSION}${MAKENSIS_SUFFIX})
 endif()
 
+if (WIN32)
+	add_executable(midiplayer WIN32 "src/sound/win32/midiplayer.c")
+	set_target_properties(midiplayer PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
+	set_target_properties(midiplayer PROPERTIES OUTPUT_NAME "stratagus-midiplayer")
+endif()
+
 ########### install files ###############
 
 install(TARGETS stratagus DESTINATION ${GAMEDIR})
 install(TARGETS png2stratagus DESTINATION ${BINDIR})
+if (WIN32)
+	install(TARGETS midiplayer DESTINATION ${GAMEDIR})
+endif()
 
 if(ENABLE_DOC AND DOXYGEN_FOUND)
 	install(FILES doc/stratagus.6 DESTINATION ${MANDIR})

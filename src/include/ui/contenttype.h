@@ -32,6 +32,7 @@
 
 //@{
 
+#include "color.h"
 #include "script.h"
 #include "vec2i.h"
 #include <vector>
@@ -141,6 +142,24 @@ public:
 
 private:
 	EnumUnit UnitRef;           /// Which unit icon to display.(itself, container, ...)
+	unsigned ButtonIcon:1;
+	unsigned SingleSelectionIcon:1;
+	unsigned GroupSelectionIcon:1;
+	unsigned TransportIcon:1;
+};
+
+/**
+**  Show a graphic
+*/
+class CContentTypeGraphic : public CContentType
+{
+public:
+	virtual void Draw(const CUnit &unit, CFont *defaultfont) const;
+	virtual void Parse(lua_State *l);
+
+private:
+	std::string graphic;
+	int frame;
 };
 
 /**
@@ -149,7 +168,7 @@ private:
 class CContentTypeLifeBar : public CContentType
 {
 public:
-	CContentTypeLifeBar() : Index(-1), ValueFunc(NULL), ValueMax(-1), Width(0), Height(0), hasBorder(true), colors(NULL), values(NULL) {}
+	CContentTypeLifeBar() : Index(-1), ValueFunc(NULL), ValueMax(-1), Width(0), Height(0), hasBorder(1), colors(NULL), values(NULL) {}
 	virtual ~CContentTypeLifeBar()
 	{
 		FreeNumberDesc(ValueFunc);
@@ -166,7 +185,7 @@ private:
 	int ValueMax;         /// Max, when used with a value function
 	int Width;            /// Width of the bar.
 	int Height;           /// Height of the bar.
-	bool hasBorder;       /// True for additional border.
+	IntColor hasBorder;   /// True for additional border.
 	unsigned int *colors; /// array of color to show (depend of value)
 	unsigned int *values; /// list of percentage to change color.
 };

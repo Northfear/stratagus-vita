@@ -378,7 +378,7 @@ namespace gcn
             ret = true;
         }
 
-        else if (key.getValue() == 'v' - 'a' + 1 && mEditable) // ctrl-v
+        else if (key.isControlPressed() && key.getValue() == 'v' && mEditable) // ctrl-v
         {
             std::string str;
             if (GetClipboard(str) >= 0) {

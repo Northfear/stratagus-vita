@@ -35,9 +35,6 @@
 
 #include <string.h>
 #include <algorithm>
-#ifdef OPENMP_ENABLED
-#include <omp.h>
-#endif
 
 #include "stratagus.h"
 #include "fow_utils.h"

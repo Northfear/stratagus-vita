@@ -78,6 +78,8 @@ Multiplayer is not supported on PS Vita.
 
 Game startup/loading times are around 1-2 minutes for Wargus.
 
+ Use `legacy` fog of war, since it's much faster (should be on by default if you haven't replaced `scripts` folder).
+
 Auto-cast with mages can cause pretty big slowdowns in War1gus (probably in Wargus too). No performance problems with auto healing and clerics tho.
 
 You can turn on bilinear filtering by editing `ux0:data/Wargus/wc2/preferences.lua`/`ux0:data/War1gus/wc1/preferences.lua` and changing `BilinearFilter` option to `true`.

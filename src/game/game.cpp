@@ -920,8 +920,6 @@ void CreateGame(const std::string &filename, CMap *map)
 
 	NetworkOnStartGame();
 
-	CallbackMusicOn();
-
 #if 0
 	GamePaused = true;
 #endif

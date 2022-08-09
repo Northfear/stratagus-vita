@@ -191,7 +191,6 @@ int NetSetNonBlocking(Socket sockfd)
 */
 unsigned long NetResolveHost(const std::string &host)
 {
-#ifndef VITA
 	if (!host.empty()) {
 		unsigned long addr = inet_addr(host.c_str()); // try dot notation
 		if (addr == INADDR_NONE) {
@@ -204,7 +203,6 @@ unsigned long NetResolveHost(const std::string &host)
 		}
 		return addr;
 	}
-#endif
 	return INADDR_NONE;
 }
 
@@ -213,9 +211,6 @@ unsigned long NetResolveHost(const std::string &host)
  */
 std::string NetGetHostname()
 {
-#ifdef VITA
-	return "localhost";
-#else
 	char hostname_buffer[256];
 #ifdef _WIN32
 	DWORD hostname_size = (DWORD)sizeof(hostname_buffer);
@@ -229,7 +224,6 @@ std::string NetGetHostname()
 	}
 #endif
 	return "localhost";
-#endif
 }
 
 /**
@@ -357,13 +351,13 @@ Socket NetOpenTCP(const char *addr, int port)
 
 		memset(&sock_addr, 0, sizeof(sock_addr));
 		sock_addr.sin_family = AF_INET;
-#ifndef VITA
+
 		if (addr) {
 			sock_addr.sin_addr.s_addr = inet_addr(addr);
 		} else {
 			sock_addr.sin_addr.s_addr = INADDR_ANY;
 		}
-#endif
+
 		sock_addr.sin_port = htons(port);
 
 		int opt = 1;
@@ -443,9 +437,7 @@ int NetSocketReady(Socket sockfd, int timeout)
 		tv.tv_usec = (timeout % 1000) * 1000;
 
 		// Data available?
-#ifndef VITA
 		retval = select(sockfd + 1, &mask, NULL, NULL, &tv);
-#endif
 #ifdef USE_WINSOCK
 	} while (retval == SOCKET_ERROR && WSAGetLastError() == WSAEINTR);
 #else
@@ -481,9 +473,7 @@ int SocketSet::Select(int timeout)
 		tv.tv_usec = (timeout % 1000) * 1000;
 
 		// Data available?
-#ifndef VITA
 		retval = select(this->MaxSockFD + 1, &mask, NULL, NULL, &tv);
-#endif
 #ifdef USE_WINSOCK
 	} while (retval == SOCKET_ERROR && WSAGetLastError() == WSAEINTR);
 #else

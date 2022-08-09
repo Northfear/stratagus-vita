@@ -913,6 +913,45 @@ if(HAIKU)
 	set(stratagus_LIBS ${stratagus_LIBS} -lnetwork)
 endif()
 
+if(VITA)
+	include_directories(src/vita)
+	set(stratagus_SRCS ${stratagus_SRCS} ${vita_SRCS})
+
+	set(VITA_FLAGS "-Ofast -mcpu=cortex-a9 -mfpu=neon -fgraphite-identity -floop-nest-optimize -fno-lto -fopenmp -DNDEBUG")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VITA_FLAGS} -std=gnu99")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VITA_FLAGS}")
+
+	set(VITA_LIBS "-fno-builtin-memcpy -fno-builtin-memset -fno-builtin-memmove -fno-builtin-memcmp")
+	SET(CMAKE_CXX_STANDARD_LIBRARIES "${VITA_LIBS}")
+
+	set(stratagus_LIBS ${stratagus_LIBS}
+		SDL2
+		webp
+		png
+		jpeg
+		vorbisfile
+		vorbis
+		ogg
+		mpg123
+		modplug
+		mikmod
+		FLAC
+		SceLibcBridge_stub
+		SceFios2_stub
+		SceGxm_stub
+		SceDisplay_stub
+		SceAppUtil_stub
+		ScePower_stub
+		SceAudio_stub
+		SceAudioIn_stub
+		SceCommonDialog_stub
+		SceCtrl_stub
+		SceHid_stub
+		SceTouch_stub
+		SceMotion_stub
+	)
+endif()
+
 # Stratagus needs to have char by default signed
 # No idea how to tell this to other compilers
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -965,7 +1004,8 @@ if(HAVE_STRCATS)
 	add_definitions(-DHAVE_STRCATS)
 endif()
 
-if(HAVE_STRCASESTR)
+# undefined reference to strcasestr during linking on Vita
+if(HAVE_STRCASESTR AND NOT VITA)
 	add_definitions(-DHAVE_STRCASESTR)
 endif()
 
@@ -1147,21 +1187,6 @@ log_package("OpenMP" "OPENMP")
 message("==================================")
 
 # Compile Stratagus
-
-if(VITA)
-	add_definitions(-DVITA)
-	include_directories(src/vita)
-	set(stratagus_SRCS ${stratagus_SRCS} ${vita_SRCS})
-	set(VITA_FLAGS "-Ofast -mcpu=cortex-a9 -mfpu=neon -fgraphite-identity -floop-nest-optimize -fno-lto -fopenmp")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VITA_FLAGS}")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VITA_FLAGS}")
-	set(VITA_LIBS "-lSDL2 -pthread -fopenmp -ljpeg -lpng -lwebp -lz -lvorbisfile -lvorbis -logg -lmikmod -lFLAC -lmpg123 -lmodplug \
-	-lSceGxm_stub -lSceDisplay_stub -lSceCtrl_stub -lSceAppMgr_stub -lSceAppUtil_stub -lSceAudio_stub -lSceAudioIn_stub -lSceSysmodule_stub \
-	-lSceDisplay_stub -lSceCtrl_stub -lSceIofilemgr_stub -lSceCommonDialog_stub -lSceTouch_stub -lSceHid_stub -lSceMotion_stub -lScePower_stub \
-	-lSceProcessmgr_stub -lSceIme_stub -lSceFios2_stub -lSceLibcBridge_stub \
-	-fno-builtin-memcpy -fno-builtin-memset -fno-builtin-memmove -fno-builtin-memcmp")
-	SET(CMAKE_CXX_STANDARD_LIBRARIES "${VITA_LIBS}")
-endif()
 
 if(NOT CMAKE_CROSSCOMPILING)
 	# Generate header file version-generated.h with git revision

@@ -61,7 +61,7 @@ error "Missing the <filesystem> header."
 #include "ui.h"
 #include "unit.h"
 
-#ifdef VITA
+#ifdef __vita__
 #include "vita.h"
 #endif
 
@@ -2175,8 +2175,7 @@ static int CclRestartStratagus(lua_State *l)
 	argv[newArgc - 1] = (char *)0;
 #ifdef WIN32
 	_execv(executable_path, argv);
-#elif defined(VITA)
-#else
+#elif !defined(__vita__)
 	execvp(executable_path, argv);
 #endif
 	delete[] argv;

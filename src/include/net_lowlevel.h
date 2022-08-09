@@ -50,7 +50,7 @@
 # include <netinet/in.h>
 # include <netdb.h>
 # include <sys/socket.h>
-# ifndef VITA
+# ifndef __vita__
 # include <sys/ioctl.h>
 # include <ifaddrs.h>
 # ifndef __BEOS__

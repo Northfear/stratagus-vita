@@ -47,7 +47,7 @@ extern "C" {
 #define MDNS_UNICAST_RESPONSE 0x8000U
 #define MDNS_CACHE_FLUSH 0x8000U
 
-#ifdef VITA
+#ifdef __vita__
 struct ipv6_mreq
 {
 	/* IPv6 multicast address of group */
@@ -56,6 +56,8 @@ struct ipv6_mreq
 	/* local interface */
 	unsigned int ipv6mr_interface;
 };
+
+static struct in6_addr in6addr_any;
 
 #define IPPROTO_IPV6 0
 #define IPV6_MULTICAST_HOPS 0
@@ -377,16 +379,14 @@ mdns_socket_setup_ipv6(int sock, struct sockaddr_in6* saddr) {
 		saddr = &sock_addr;
 		memset(saddr, 0, sizeof(struct sockaddr_in6));
 		saddr->sin6_family = AF_INET6;
-#ifndef VITA
 		saddr->sin6_addr = in6addr_any;
-#endif
 #ifdef __APPLE__
 		saddr->sin6_len = sizeof(struct sockaddr_in6);
 #endif
 	} else {
 		unsigned int ifindex = 0;
 		setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, (const char*)&ifindex, sizeof(ifindex));
-#if !defined(_WIN32) && !defined(VITA)
+#ifndef _WIN32
 		saddr->sin6_addr = in6addr_any;
 #endif
 	}

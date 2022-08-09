@@ -231,7 +231,7 @@ extern void beos_init(int argc, char **argv);
 #include "SetupConsole_win32.h"
 #endif
 
-#ifdef VITA
+#ifdef __vita__
 #include <psp2/kernel/processmgr.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/apputil.h>
@@ -484,7 +484,7 @@ void Exit(int err)
 	}
 
 	fprintf(stdout, "%s", _("Thanks for playing Stratagus.\n"));
-#ifdef VITA
+#ifdef __vita__
 	fios_terminate();
 	sceKernelExitProcess(0);
 #else
@@ -506,7 +506,7 @@ void ExitFatal(int err)
 	print_backtrace();
 #endif
 
-#ifdef VITA
+#ifdef __vita__
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
 							"Error during initialization.",
 							"Wargus requires original game data. Make sure that data is properly installed. Check detailed instructions on the GitHub page of the port:\nhttps://github.com/Northfear/stratagus-vita",
@@ -780,7 +780,7 @@ int stratagusMain(int argc, char **argv)
 	SetupConsole();
 #endif
 	//  Setup some defaults.
-#ifdef VITA
+#ifdef __vita__
 	scePowerSetArmClockFrequency(444);
 	scePowerSetBusClockFrequency(222);
 	scePowerSetGpuClockFrequency(222);

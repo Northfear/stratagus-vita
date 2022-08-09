@@ -9,7 +9,7 @@ else()
     set(EXECUTABLE_NAME stratagus)
 endif()
 
-set(VITA_VERSION "03.30")
+set(VITA_VERSION "03.32")
 
 set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d ATTRIBUTE2=12")
 vita_create_self(${EXECUTABLE_NAME}.self ${EXECUTABLE_NAME})

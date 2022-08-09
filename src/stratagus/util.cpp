@@ -55,7 +55,7 @@
 #include "st_backtrace.h"
 #endif
 
-#ifdef VITA
+#ifdef __vita__
 #include <psp2/kernel/clib.h>
 #endif
 
@@ -298,7 +298,7 @@ errno_t strcat_s(char *dst, size_t dstsize, const char *src)
 }
 #endif
 
-#if !defined(HAVE_STRCASESTR) || defined(VITA)
+#if !defined(HAVE_STRCASESTR)
 /**
 **  Case insensitive version of strstr
 **
@@ -500,7 +500,7 @@ void AbortAt(const char *file, int line, const char *funcName, const char *condi
 
 void PrintOnStdOut(const char *format, ...)
 {
-#ifdef VITA
+#ifdef __vita__
 	va_list valist;
 	va_start(valist, format);
     char msg[200];

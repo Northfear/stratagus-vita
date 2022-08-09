@@ -48,7 +48,7 @@ Copy `scripts/wc2-config.lua` for Wargus or `scripts/wc1-config.lua` for War1gus
 ```
 mkdir build && cd build
 export SDLDIR=$VITASDK/arm-vita-eabi/
-cmake .. -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake -DVITA=true -DENABLE_STATIC=ON -DENABLE_USEGAMEDIR=ON -DEAGER_LOAD=ON -DCMAKE_BUILD_TYPE=None
+cmake .. -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake -DENABLE_STATIC=ON -DENABLE_USEGAMEDIR=ON -DEAGER_LOAD=ON -DCMAKE_BUILD_TYPE=None
 make
 ```
 

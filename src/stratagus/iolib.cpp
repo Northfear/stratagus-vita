@@ -58,7 +58,7 @@
 #include <bzlib.h>
 #endif
 
-#ifdef VITA
+#ifdef __vita__
 #include <psp2/kernel/clib.h>
 #include "vita.h"
 #include "libc_bridge.h"

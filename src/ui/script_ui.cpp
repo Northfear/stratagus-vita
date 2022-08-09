@@ -80,7 +80,7 @@ CPreference Preference;
 **
 ** <div class="example"><code><strong>SetMouseScrollSpeed</strong>(2)</code></div>
 */
-#ifdef VITA
+#ifdef __vita__
 static int CclSetControllerSpeed(lua_State *l)
 {
 	LuaCheckArgs(l, 1);
@@ -369,6 +369,11 @@ static int CclSetWindowSize(lua_State *l)
 */
 static int CclSetVerticalPixelSize(lua_State *l)
 {
+#ifdef __vita__
+	// TODO: UI elements/cursor interaction with 1.2 pixel size enabled
+	// is bugged on Vita, so lets skip it for now
+	return 0;
+#endif
 	LuaCheckArgs(l, 1);
 	if (CclInConfigFile) {
 		luaL_checktype(l, 1, LUA_TNUMBER);
@@ -1381,7 +1386,7 @@ void UserInterfaceCclRegister()
 {
 	CursorCclRegister();
 	lua_register(Lua, "AddMessage", CclAddMessage);
-#ifdef VITA
+#ifdef __vita__
 	lua_register(Lua, "SetControllerSpeed", CclSetControllerSpeed);
 	lua_register(Lua, "SetBilinearFilter", CclSetBilinearFilter);
 #endif

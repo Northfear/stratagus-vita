@@ -259,7 +259,7 @@ void CVideo::ClearScreen()
 	FillRectangle(ColorBlack, 0, 0, Video.Width, Video.Height);
 }
 
-#ifdef VITA
+#ifdef __vita__
 void CVideo::SetVitaRenderArea()
 {
 	RenderRect.x = 0;
@@ -328,11 +328,11 @@ bool CVideo::ResizeScreen(int w, int h)
 	Width = w;
 	Height = h;
 
-#ifndef VITA
+#ifndef __vita__
 	SDL_RenderSetLogicalSize(TheRenderer, w, h * VerticalPixelSize);
 #endif
 
-#ifdef VITA
+#ifdef __vita__
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, BilinearFilter ? "1" : "0");
 #endif
 
@@ -341,40 +341,25 @@ bool CVideo::ResizeScreen(int w, int h)
 		SDL_FreeSurface(TheScreen);
 	}
 
-	if (Depth == 16) {
-		TheScreen = SDL_CreateRGBSurface(0, w, h, 16,
-										RMASK16,
-										GMASK16,
-										BMASK16,
-										0); // AMASK);
-	} else {
-		TheScreen = SDL_CreateRGBSurface(0, w, h, 32,
-										RMASK,
-										GMASK,
-										BMASK,
-										0); // AMASK);
-	}
+	TheScreen = SDL_CreateRGBSurface(0, w, h, 32,
+									 RMASK,
+									 GMASK,
+									 BMASK,
+									 0); // AMASK);
 	Assert(SDL_MUSTLOCK(TheScreen) == 0);
 
 	// new texture
 	if (TheTexture) {
 		SDL_DestroyTexture(TheTexture);
 	}
-	if (Depth == 16) {
-		TheTexture = SDL_CreateTexture(TheRenderer,
-									SDL_PIXELFORMAT_RGB565,
-									SDL_TEXTUREACCESS_STREAMING,
-									w, h);
-	} else {
-		TheTexture = SDL_CreateTexture(TheRenderer,
-									SDL_PIXELFORMAT_ARGB8888,
-									SDL_TEXTUREACCESS_STREAMING,
-									w, h);
-	}
+	TheTexture = SDL_CreateTexture(TheRenderer,
+	                               SDL_PIXELFORMAT_ARGB8888,
+	                               SDL_TEXTUREACCESS_STREAMING,
+	                               w, h);
 
 	SetClipping(0, 0, w - 1, h - 1);
 
-#ifdef VITA
+#ifdef __vita__
 	SetVitaRenderArea();
 #endif
 	return true;

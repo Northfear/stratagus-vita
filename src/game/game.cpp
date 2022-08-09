@@ -78,7 +78,7 @@
 #include "video.h"
 
 
-#ifdef VITA
+#ifdef __vita__
 #include "vita.h"
 #endif
 

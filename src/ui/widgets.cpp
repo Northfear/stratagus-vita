@@ -1245,7 +1245,7 @@ void ImageTextField::draw(gcn::Graphics *graphics)
 		fprintf(stderr, "Not all graphics for ImageTextField were set\n");
 		ExitFatal(1);
 	}
-#ifndef VITA
+#ifndef __vita__
 	// UI resizes are causing massive slowdowns
 	img->Resize(getWidth(), img->getHeight());
 #endif
@@ -1353,7 +1353,7 @@ void ImageListBox::draw(gcn::Graphics *graphics)
 	int i, fontHeight;
 	int y = 0;
 	CGraphic *img = itemImage;
-#ifndef VITA
+#ifndef __vita__
 	img->Resize(getWidth(), img->getHeight());
 #endif
 
@@ -1699,7 +1699,7 @@ void ImageListBoxWidget::draw(gcn::Graphics *graphics)
 
 	gcn::Rectangle rect = getContentDimension();
 	img = itemImage;
-#ifndef VITA
+#ifndef __vita__
 	img->Resize(rect.width, img->getHeight());
 #endif
 	int y = 0;
@@ -1896,7 +1896,7 @@ void ImageListBoxWidget::drawHBar(gcn::Graphics *graphics)
 	CGraphic *img = NULL;
 
 	img = hBarButtonImage;
-#ifndef VITA
+#ifndef __vita__
 	img->Resize(dim.width, dim.height);
 #endif
 	graphics->drawImage(img, 0, 0, 0, 0, img->getWidth(), img->getHeight());
@@ -1913,7 +1913,7 @@ void ImageListBoxWidget::drawVBar(gcn::Graphics *graphics)
 	CGraphic *img = NULL;
 
 	img = vBarButtonImage;
-#ifndef VITA
+#ifndef __vita__
 	img->Resize(dim.width, dim.height);
 #endif
 	graphics->drawImage(img, 0, 0, 0, 0, img->getWidth(), img->getHeight());
@@ -2122,7 +2122,7 @@ void ImageDropDownWidget::draw(gcn::Graphics *graphics)
 	shadowColor.a = alpha;
 
 
-#ifndef VITA
+#ifndef __vita__
 	img->Resize(getWidth(), h);
 #endif
 	graphics->drawImage(img, 0, 0, 0, 0, getWidth(), h);
@@ -2202,7 +2202,7 @@ void ImageDropDownWidget::drawButton(gcn::Graphics *graphics)
 	} else {
 		img = this->DownNormalImage;
 	}
-#ifndef VITA
+#ifndef __vita__
 	img->Resize(h, h);
 #endif
 	graphics->drawImage(img, 0, 0, x, y, h, h);

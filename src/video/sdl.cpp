@@ -112,7 +112,7 @@ static bool dummyRenderer = false;
 
 uint32_t SDL_CUSTOM_KEY_UP;
 
-#ifdef VITA
+#ifdef __vita__
 // used to convert user-friendly pointer speed values into more useable ones
 const double CONTROLLER_SPEED_MOD = 2000000.0;
 // bigger value correndsponds to faster pointer movement speed with bigger stick axis values
@@ -388,9 +388,9 @@ void InitVideoSdl()
 		signal(SIGSEGV, CleanExit);
 		signal(SIGABRT, CleanExit);
 #endif
-#ifdef VITA
+#ifdef __vita__
 	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
-    SDL_Init(SDL_INIT_GAMECONTROLLER);
+	SDL_Init(SDL_INIT_GAMECONTROLLER);
 	OpenController();
 #endif
 	}
@@ -602,7 +602,7 @@ static bool isTextInput(int key) {
 	return key >= 32 && key <= 128 && !(KeyModifiers & (ModifierAlt | ModifierControl | ModifierSuper));
 }
 
-#ifdef VITA
+#ifdef __vita__
 void HandleTouchEvent(const EventCallback &callbacks, const SDL_TouchFingerEvent& event)
 {
 	// ignore back touchpad
@@ -1036,7 +1036,7 @@ static void SdlDoEvent(const EventCallback &callbacks, SDL_Event &event)
 			}
 			break;
 
-#ifdef VITA
+#ifdef __vita__
 		case SDL_FINGERDOWN:
 		case SDL_FINGERUP:
 		case SDL_FINGERMOTION:
@@ -1169,7 +1169,7 @@ void WaitEventsOneFrame()
 		SkipGameCycle = SkipFrames;
 	}
 
-#ifdef VITA
+#ifdef __vita__
 	ProcessControllerAxisMotion();
 #endif
 }
@@ -1229,7 +1229,7 @@ void RealizeVideoMemory()
 			SDL_RenderClear(TheRenderer);
 			//for (int i = 0; i < NumRects; i++)
 			//    SDL_UpdateTexture(TheTexture, &Rects[i], TheScreen->pixels, TheScreen->pitch);
-#ifdef VITA
+#ifdef __vita__
 			SDL_RenderCopy(TheRenderer, TheTexture, NULL, &Video.RenderRect);
 #else
 			SDL_RenderCopy(TheRenderer, TheTexture, NULL, NULL);
@@ -1341,7 +1341,7 @@ void ToggleFullScreen()
 #endif
 
 	Video.FullScreen = (flags ^ SDL_WINDOW_FULLSCREEN_DESKTOP) ? 1 : 0;
-#ifdef VITA
+#ifdef __vita__
 	Video.SetVitaRenderArea();
 #endif
 }

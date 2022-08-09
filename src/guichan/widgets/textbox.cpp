@@ -66,7 +66,7 @@
 #include "guichan/exception.h"
 #include "util.h"
 
-#ifdef VITA
+#ifdef __vita__
 #include "video.h"
 #endif
 
@@ -597,7 +597,7 @@ namespace gcn
         mOpaque = opaque;
     }
 
-#ifdef VITA
+#ifdef __vita__
     void TextBox::gotFocus()
     {
         Widget::gotFocus();

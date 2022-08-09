@@ -53,11 +53,31 @@
 -- Variables
 ----------------------------------------------------------------------------*/
 
-std::atomic_flag MusicFinishedEventQueued = ATOMIC_FLAG_INIT; // flag is set when a MusicFinishedCallback was enqueued in the event loop and unset when it is handled
+/// flag is set when a MusicFinishedCallback was enqueued in the event loop and should be handled, and unset when the handler has run.
+static std::atomic_flag MusicFinishedEventQueued = ATOMIC_FLAG_INIT;
+static volatile bool IsCallbackEnabled = false;
 
 /*----------------------------------------------------------------------------
 -- Functions
 ----------------------------------------------------------------------------*/
+
+/**
+**  Check if music is finished and play the next song
+*/
+static void CheckMusicFinished()
+{
+	if (SoundEnabled() && IsMusicEnabled()) {
+		lua_getglobal(Lua, "MusicStopped");
+		if (!lua_isfunction(Lua, -1)) {
+			fprintf(stderr, "No MusicStopped function in Lua\n");
+		} else {
+			DebugPrint("Calling MusicStopped callback at %ul\n" _C_ SDL_GetTicks());
+			LuaCall(0, 1);
+		}
+	}
+	// clear the flag after handling the event, so the next event can be enqueued
+	MusicFinishedEventQueued.clear();
+}
 
 /**
 **  Callback for when music has finished
@@ -65,6 +85,9 @@ std::atomic_flag MusicFinishedEventQueued = ATOMIC_FLAG_INIT; // flag is set whe
 */
 static void MusicFinishedCallback()
 {
+	if (!IsCallbackEnabled) {
+		return;
+	}
 	if (MusicFinishedEventQueued.test_and_set()) {
 		// don't queue more than one of these events at a time
 		return;
@@ -81,31 +104,27 @@ static void MusicFinishedCallback()
 }
 
 /**
-**  Check if music is finished and play the next song
-*/
-void CheckMusicFinished(int force)
-{
-	if (SoundEnabled() && IsMusicEnabled()) {
-		lua_getglobal(Lua, "MusicStopped");
-		if (!lua_isfunction(Lua, -1)) {
-			fprintf(stderr, "No MusicStopped function in Lua\n");
-		} else {
-			LuaCall(0, 1);
-		}
-	}
-	// clear the flag after handling the event, so the next event can be enqueued
-	MusicFinishedEventQueued.clear();
-}
-
-/**
 **  Init music
 */
 void InitMusic()
 {
 	SetMusicFinishedCallback(MusicFinishedCallback);
+	CallbackMusicEnable();
 #ifdef USE_FLUIDSYNTH
 	InitFluidSynth();
 #endif
+}
+
+void CallbackMusicEnable() {
+	IsCallbackEnabled = true;
+}
+
+void CallbackMusicDisable() {
+	IsCallbackEnabled = false;
+}
+
+void CallbackMusicTrigger() {
+	MusicFinishedCallback();
 }
 
 //@}

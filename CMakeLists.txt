@@ -918,7 +918,7 @@ if(VITA)
 	set(stratagus_SRCS ${stratagus_SRCS} ${vita_SRCS})
 
 	set(VITA_FLAGS "-Ofast -mcpu=cortex-a9 -mfpu=neon -fgraphite-identity -floop-nest-optimize -fno-lto -fopenmp -DNDEBUG")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VITA_FLAGS} -std=gnu99")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VITA_FLAGS}")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VITA_FLAGS}")
 
 	set(VITA_LIBS "-fno-builtin-memcpy -fno-builtin-memset -fno-builtin-memmove -fno-builtin-memcmp")

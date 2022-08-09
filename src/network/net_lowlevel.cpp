@@ -351,13 +351,11 @@ Socket NetOpenTCP(const char *addr, int port)
 
 		memset(&sock_addr, 0, sizeof(sock_addr));
 		sock_addr.sin_family = AF_INET;
-
 		if (addr) {
 			sock_addr.sin_addr.s_addr = inet_addr(addr);
 		} else {
 			sock_addr.sin_addr.s_addr = INADDR_ANY;
 		}
-
 		sock_addr.sin_port = htons(port);
 
 		int opt = 1;

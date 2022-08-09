@@ -340,7 +340,6 @@ bool CVideo::ResizeScreen(int w, int h)
 	if (TheScreen) {
 		SDL_FreeSurface(TheScreen);
 	}
-
 	TheScreen = SDL_CreateRGBSurface(0, w, h, 32,
 									 RMASK,
 									 GMASK,
@@ -452,7 +451,7 @@ void BlitSurfaceAlphaBlending_32bpp(const SDL_Surface *srcSurface, const SDL_Rec
 		/// TODO: change numOfThreads for small rectangles to prevent False Sharing
 		const uint16_t thisThread   = omp_get_thread_num();
 		const uint16_t numOfThreads = omp_get_num_threads();
-
+		
 		const uint16_t lBound = (thisThread    ) * dstWrkRect.h / numOfThreads; 
 		const uint16_t uBound = (thisThread + 1) * dstWrkRect.h / numOfThreads; 
 

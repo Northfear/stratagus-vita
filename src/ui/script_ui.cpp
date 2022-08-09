@@ -1386,6 +1386,7 @@ void UserInterfaceCclRegister()
 {
 	CursorCclRegister();
 	lua_register(Lua, "AddMessage", CclAddMessage);
+
 #ifdef __vita__
 	lua_register(Lua, "SetControllerSpeed", CclSetControllerSpeed);
 	lua_register(Lua, "SetBilinearFilter", CclSetBilinearFilter);

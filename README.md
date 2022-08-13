@@ -12,11 +12,11 @@ So basically you'll have to install Wargus/War1gus on your PC, extract game data
 
     https://github.com/Northfear/stratagus-vita/releases
 
-2. Download Wargus/War1gus and install it to your PC (Only use the versions linked below, since version mismatch may cause problems)
+2. Download Wargus/War1gus and install it to your PC (Make sure that you're using the SAME version for both Vita and PC, since version mismatch may cause problems)
 
-    https://github.com/Wargus/wargus/releases/tag/v3.1.2
+    https://github.com/Wargus/wargus/releases/
 
-    https://github.com/Wargus/war1gus/releases/tag/v3.1.2
+    https://github.com/Wargus/war1gus/releases/
 
 (You may need to disable antivirus during Wargus installation, since it may break ecoding process in some cases)
 
@@ -74,11 +74,13 @@ You can change cursor movement speed by editing `ux0:data/Wargus/wc2/preferences
 
 ### Additional info
 
+You may have to reinstall data files (Install steps 2-4) after the Stratagus update.
+
 Multiplayer is not supported on PS Vita.
 
 Game startup/loading times are around 1-2 minutes for Wargus.
 
- Use `legacy` fog of war, since it's much faster (should be on by default if you haven't replaced `scripts` folder).
+Use the `legacy` fog of war, since it's much faster (should be on by default if you haven't replaced `scripts` folder).
 
 Auto-cast with mages can cause pretty big slowdowns in War1gus (probably in Wargus too). No performance problems with auto healing and clerics tho.
 

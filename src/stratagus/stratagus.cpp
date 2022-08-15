@@ -509,7 +509,7 @@ void ExitFatal(int err)
 #ifdef __vita__
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
 							"Error during initialization.",
-							"Wargus requires original game data. Make sure that data is properly installed. Check detailed instructions on the GitHub page of the port:\nhttps://github.com/Northfear/stratagus-vita",
+							"Wargus requires original game data (you may also need to re-install it if you've updated the Stratagus version).\nCheck detailed instructions on the GitHub page of the port:\nhttps://github.com/Northfear/stratagus-vita",
 							NULL);
 #endif
 	exit(err);
